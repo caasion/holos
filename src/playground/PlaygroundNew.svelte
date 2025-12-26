@@ -352,8 +352,10 @@
             <div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
                 {#each dates as {date}, col (date)}
                     <div class="header-cell">
-                        <div class="dow-label">{format(parseISO(date), "E")}</div>
-                        <div class="date-label">{format(parseISO(date), "dd")}</div>
+                        <div class="date-card">
+                            <div class="dow-label">{format(parseISO(date), "E")}</div>
+                            <div class="date-label">{format(parseISO(date), "dd")}</div>
+                        </div>
                     </div>
                 {/each}
             </div>
@@ -452,15 +454,53 @@
 	}
 
 	/* Table Header */
+	.header-cell {
+		padding: 8px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		border-right: 1px solid #ccc; 
+	}
+
+	.header-cell:last-child {
+		border-right: none;
+	}
+
+	.date-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: var(--background-secondary);
+		border-radius: 8px;
+		padding: 12px 16px;
+		min-width: 70px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		transition: all 0.2s;
+	}
+
+	.date-card:hover {
+		background-color: var(--background-modifier-hover);
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		transform: translateY(-2px);
+	}
+
 	.dow-label {
 		text-align: center;
-		background-color: var(--theme-color);
-		color: white;
-		mix-blend-mode: exclusion;
+		font-size: 0.9em;
+		font-weight: 600;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 4px;
 	}
 
 	.date-label {
-		text-align: right;
+		text-align: center;
+		font-size: 1.8em;
+		font-weight: 700;
+		color: var(--text-normal);
+		line-height: 1;
 	}
 
 	/* Grid Layout */
@@ -478,6 +518,8 @@
 		display: grid;
 		/* grid-template-columns is set dynamically in the Svelte component */
 		border-bottom: 2px solid #ccc;
+		padding: 8px 0;
+		background-color: var(--background-primary);
 	}
 
 	.header-cell {
