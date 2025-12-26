@@ -6,9 +6,10 @@
 		itemId: ItemID;
 		itemData: ItemData;
 		onUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
+		itemColor?: string;
 	}
 
-	let { date, itemId, itemData, onUpdate }: EditableCellProps = $props();
+	let { date, itemId, itemData, onUpdate, itemColor = "#666" }: EditableCellProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editingIndex = $state<number | null>(null);
@@ -186,18 +187,18 @@
 							class="task-checkbox"
 						/>
 					{/if}
-					<span class:checked={element.checked}>{element.text}</span>
+					<span class:checked={element.checked} style={`color: ${itemColor};`}>{element.text}</span>
 					{#if element.startTime && element.duration && element.durationUnit}
-						<span class="time-badge">
+						<span class="time-badge" style={`background-color: ${itemColor};`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 							({element.duration} {element.durationUnit})
 						</span>
 					{:else if element.startTime}
-						<span class="time-badge">
+						<span class="time-badge" style={`background-color: ${itemColor};`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 						</span>
 					{:else if element.duration && element.durationUnit}
-						<span class="time-badge">
+						<span class="time-badge" style={`background-color: ${itemColor};`}>
 							{element.duration} {element.durationUnit}
 						</span>
 					{/if}
@@ -244,6 +245,7 @@
 		border-radius: 2px;
 		display: flex;
 		align-items: center;
+        height: 100%;
 		gap: 4px;
 	}
 
