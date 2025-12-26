@@ -313,6 +313,35 @@
 		await tick();
 		// focusCell(focus.row, focus.col);
 	}
+
+	// Open daily note for a specific date
+	async function openDailyNote(date: ISODate) {
+		let dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
+		
+		if (!dailyNoteFile) {
+			// Prompt user to create daily note
+			new Notice("Daily note doesn't exist. Creating it now...");
+			
+			try {
+				dailyNoteFile = await createDailyNote(moment(date));
+				new Notice("Daily note created!");
+			} catch (error) {
+				new Notice("Failed to create daily note");
+				console.error("Error creating daily note:", error);
+				return;
+			}
+		}
+		
+		// Open the daily note
+		if (dailyNoteFile) {
+			await app.workspace.getLeaf(false).openFile(dailyNoteFile);
+		}
+	}
+
+	// Check if a date is today
+	function isToday(date: ISODate): boolean {
+		return date === helper.getISODate(new Date());
+	}
 </script>
 
 <h1>The Ultimate Planner</h1>
@@ -352,10 +381,15 @@
             <div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
                 {#each dates as {date}, col (date)}
                     <div class="header-cell">
-                        <div class="date-card">
+                        <button 
+                            class="date-card" 
+                            class:today={isToday(date)}
+                            onclick={() => openDailyNote(date)}
+                            title="Click to open daily note"
+                        >
                             <div class="dow-label">{format(parseISO(date), "E")}</div>
                             <div class="date-label">{format(parseISO(date), "dd")}</div>
-                        </div>
+                        </button>
                     </div>
                 {/each}
             </div>
@@ -471,35 +505,50 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background-color: var(--background-secondary);
+		background-color: var(--interactive-accent);
+		opacity: 0.7;
 		border-radius: 8px;
-		padding: 12px 16px;
-		min-width: 70px;
+		padding: 4px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 		transition: all 0.2s;
+		border: none;
+		cursor: pointer;
+		width: 100%;
+		height: 100%;
 	}
 
 	.date-card:hover {
-		background-color: var(--background-modifier-hover);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		opacity: 1;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 		transform: translateY(-2px);
+	}
+
+	.date-card.today {
+		opacity: 1;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+		border: 2px solid var(--text-accent);
+	}
+
+	.date-card.today:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	}
 
 	.dow-label {
 		text-align: center;
 		font-size: 0.9em;
 		font-weight: 600;
-		color: var(--text-muted);
+		color: white;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 		margin-bottom: 4px;
+		opacity: 0.9;
 	}
 
 	.date-label {
 		text-align: center;
 		font-size: 1.8em;
 		font-weight: 700;
-		color: var(--text-normal);
+		color: white;
 		line-height: 1;
 	}
 
