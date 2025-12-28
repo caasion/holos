@@ -29,15 +29,6 @@ export default class UltimatePlannerPlugin extends Plugin {
 	async onload() {
 		await this.loadPersisted();
 
-		// Add debug command
-		this.addCommand({
-			id: 'debug-log-snaposhot',
-			name: 'Debug: Log snapshot',
-			callback: () => {
-				console.log(this.snapshot())
-			}
-		});
-
 		this.dataService = {
 			templates,
 			calendarState,
@@ -105,7 +96,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 
 		// Register UPV using Obsidian's API
 		this.registerView(PLANNER_VIEW_TYPE, (leaf) => new PlannerView(leaf, this));
-		this.registerView(PLAYGROUND_VIEW_TYPE, (leaf) => new PlaygroundView(leaf, this));
+		
 
 		// Add a command to open UPV
 		this.addCommand({
@@ -116,14 +107,27 @@ export default class UltimatePlannerPlugin extends Plugin {
 			}
 		});
 
+		if (this.settings.debug) {
+			this.registerView(PLAYGROUND_VIEW_TYPE, (leaf) => new PlaygroundView(leaf, this));
+
+			this.addCommand({
+				id: 'open-playground-view',
+				name: 'Open Playground View',
+				callback: () => {
+					this.activateView(PLAYGROUND_VIEW_TYPE);
+				}
+			});
+		}
+
+		// Add debug command
 		this.addCommand({
-			id: 'open-playground-view',
-			name: 'Open Playground View',
+			id: 'debug-log-snaposhot',
+			name: 'Debug: Log snapshot',
 			callback: () => {
-				this.activateView(PLAYGROUND_VIEW_TYPE);
+				console.log(this.snapshot())
 			}
 		});
-	}
+	} 
 
 	async onunload() {
 		// Unsubscribe to stores

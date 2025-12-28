@@ -127,7 +127,7 @@ export class UltimatePlannerPluginTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Debug Mode')
-            .setDesc('Activate or deactive developer mode.')
+            .setDesc('Activate Playground View, debug commands, and debug logs. (Reload plugin to reflect changes)')
             .addToggle(toggle => {
                 toggle
                     .setValue(this.plugin.settings.debug)
