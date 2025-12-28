@@ -273,8 +273,8 @@
 			id: itemId,
 			time: 60,
 			items: [{
-				raw: "",
-				text: "",
+				raw: "New Item",
+				text: "New Item",
 				children: [],
 				isTask: false
 			}]
@@ -400,9 +400,9 @@
 					{#if tDate === ""}
 						<div class="cell">-</div>
 					{:else if row < Object.keys(sortedTemplates[tDate]).length}
-                        <div class="cell">
+                        <div class="cell" style={`background-color: ${sortedTemplates[tDate][row].meta.color}10;`}>
 							{#if (col == 0 && sortedTemplates[tDate][row].meta.label !== "") || tDate == date}
-							<div class="row-label" style={`background-color: ${sortedTemplates[tDate][row].meta.color}b3; color: white;`}>{sortedTemplates[tDate][row].meta.type == "calendar" ? "📅" : ""} {sortedTemplates[tDate][row].meta.label}</div>
+							<div class="row-label" style={`background-color: ${sortedTemplates[tDate][row].meta.color}80; color: white;`}>{sortedTemplates[tDate][row].meta.type == "calendar" ? "📅" : ""} {sortedTemplates[tDate][row].meta.label}</div>
 						{/if}
 						{#if (parsedContent[date] && parsedContent[date][sortedTemplates[tDate][row].id])}
 							<EditableCell 
@@ -414,9 +414,9 @@
 								/>
 							{:else}
 								<div class="empty-cell">
-									<div class="empty-message">No data</div>
 									<button 
 										class="add-new-btn" 
+										style={`border-color: ${sortedTemplates[tDate][row].meta.color}; color: ${sortedTemplates[tDate][row].meta.color};`}
 										onclick={() => addNewItemToCell(date, sortedTemplates[tDate][row].id, sortedTemplates[tDate][row].meta)}
 										title="Add new item"
 									>
@@ -599,6 +599,7 @@
 		font-weight: 600;
 		margin-bottom: 4px;
 		font-size: 0.9em;
+		width: fit-content;
 	}
 
 	.empty-cell {
@@ -620,8 +621,7 @@
 	.add-new-btn {
 		padding: 4px 12px;
 		background: transparent;
-		border: 1px dashed var(--interactive-accent);
-		color: var(--interactive-accent);
+		border: 1px dashed;
 		cursor: pointer;
 		border-radius: 4px;
 		font-size: 0.85em;
@@ -629,8 +629,6 @@
 	}
 
 	.add-new-btn:hover {
-		background-color: var(--interactive-accent);
-		color: white;
-		border-style: solid;
+		opacity: 0.8;
 	}
 </style>
