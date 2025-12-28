@@ -12,7 +12,7 @@
 	import { Notice } from "obsidian";
 	import FloatBlock from "src/ui/FloatBlock.svelte";
 	import TemplateEditor from "src/ui/TemplateEditor.svelte";
-	import EditableCell from "./EditableCell.svelte";
+	import EditableCell from "../ui/EditableCell.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
