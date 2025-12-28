@@ -3,7 +3,6 @@ import type { ISODate, ItemID, ItemMeta } from "src/types";
 import { addDays, eachDayOfInterval, parseISO } from "date-fns";
 import { addDaysISO, getISODate } from "src/actions/helpers";
 
-export const dayData = writable<Record<ISODate, Record<ItemID, string>>>({});
 export const templates = writable<Record<ISODate, Record<ItemID, ItemMeta>>>({});
 export const sortedTemplateDates = writable<ISODate[]>([]);
 
@@ -101,41 +100,36 @@ function getDatesOfTemplate(tDate: ISODate): ISODate[] {
 }
 
 /** Removes an item from all cells of a template of a given date. Returns false if the given date doesn't have a template. A costly operation. */
-export function removeFromCellsInTemplate(tDate: ISODate, id: ItemID): boolean {
-    if (!get(templates)[tDate]) return false;
+// export function removeFromCellsInTemplate(tDate: ISODate, id: ItemID): boolean {
+//     if (!get(templates)[tDate]) return false;
 
-    // Implementation: Finds the index of the current date, then add one, to find the next template date within sortedTemplateDates. Then, get an array of the dates to remove the item from. Finally, delete the item from every day the template is in.
-    const dates: ISODate[] = getDatesOfTemplate(tDate);
+//     // Implementation: Finds the index of the current date, then add one, to find the next template date within sortedTemplateDates. Then, get an array of the dates to remove the item from. Finally, delete the item from every day the template is in.
+//     const dates: ISODate[] = getDatesOfTemplate(tDate);
 
-    dayData.update(data => {
-        const current = {...data}
-        dates.forEach(d => {
-            if (current[d]) {
-                current[d][id] && delete current[d][id];
+//     dayData.update(data => {
+//         const current = {...data}
+//         dates.forEach(d => {
+//             if (current[d]) {
+//                 current[d][id] && delete current[d][id];
 
-                // Clean up the dayData entry if there is nothing in that day
-                if (Object.keys(current[d]).length === 0) {
-                    delete current[d];
-                }
-            }
-        })
-        return current;
-    })
+//                 // Clean up the dayData entry if there is nothing in that day
+//                 if (Object.keys(current[d]).length === 0) {
+//                     delete current[d];
+//                 }
+//             }
+//         })
+//         return current;
+//     })
 
-    return true;
-}
+//     return true;
+// }
+// TODO: REIMPLEMENTATION
 
+/** Removes a template from the list. Does not remove daily data */
 export function removeTemplate(tDate: ISODate): boolean {
     if (!get(templates)[tDate]) return false;
 
     const dates = getDatesOfTemplate(tDate);
-    dayData.update(data => {
-        const current = {...data};
-        dates.forEach(d => {
-            current[d] && delete current[d];
-        })
-        return current;
-    })
 
     templates.update(templates => {
         const current = {...templates};
@@ -191,27 +185,4 @@ export function getFloatCell(tDate: ISODate, id: ItemID) {
     const temps = get(templates);
 
     return (temps[tDate] && temps[tDate][id] && temps[tDate][id].floatCell) ?? "";
-}
-
-
-/** Sets the contents of a cell in a given date for given action item ID.
- * Doesn't matter if the cell was previously empty.
- */
-export function setCell(date: ISODate, id: ItemID, value: string) {
-    dayData.update(data => ({
-        ...data,
-        [date]: {
-            ...data[date],
-            [id]: value
-        }
-    }))
-}
-
-
-/** Gets the contents of a cell in a given date for given row ID. 
- * Returns an empty string if there is no date entry in dayData or if the date entry exists but there is no entry for a given row ID. */
-export function getCell(date: ISODate, id: ItemID) {
-    const data = get(dayData);
-
-    return data[date] && data[date][id] ? data[date][id] : "";
 }

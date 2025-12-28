@@ -71,7 +71,6 @@ export interface CalendarMeta {
 }
 
 export interface PlannerState {
-    dayData: Record<ISODate, Record<ItemID, string>>;
     templates: Record<ISODate, Record<ItemID, ItemMeta>>;
 }
 
@@ -116,7 +115,6 @@ export type CalendarStatus = "idle" | "fetching" | "unchanged" | "updated" | "er
 /* Core Data Service */
 export interface DataService {
     // Svelte Stores (The Writable objects themselves)
-    dayData: Writable<Record<ISODate, Record<ItemID, string>>>;
     templates: Writable<Record<ISODate, Record<ItemID, ItemMeta>>>;
     calendarState: Writable<CalendarState>;
     fetchToken: Writable<number>;
@@ -133,8 +131,6 @@ export interface DataService {
     updateItemMeta: (tDate: ISODate, id: ItemID, updates: Partial<ItemMeta>) => boolean;
     setFloatCell: (tDate: ISODate, id: ItemID, value: string) => boolean;
     getFloatCell: (tDate: ISODate, id: ItemID) => string;
-    setCell: (date: ISODate, id: ItemID, value: string) => void;
-    getCell: (date: ISODate, id: ItemID) => string;
 }
 
 // Core Helper Service Contract (Pure Functions from helper.ts)

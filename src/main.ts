@@ -1,7 +1,7 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './ui/PlannerView';
 import { UltimatePlannerPluginTab } from './ui/SettingsTab';
-import { addToTemplate, dayData, getCell, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromCellsInTemplate, removeFromTemplate, removeTemplate, setCell, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './state/plannerStore';
+import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './state/plannerStore';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './types';
 import { CalendarPipeline } from './actions/calendarPipelines';
@@ -39,7 +39,6 @@ export default class UltimatePlannerPlugin extends Plugin {
 		});
 
 		this.dataService = {
-			dayData,
 			templates,
 			calendarState,
 			fetchToken,
@@ -49,14 +48,12 @@ export default class UltimatePlannerPlugin extends Plugin {
 			getTemplate,
 			getItemFromLabel,
 			removeFromTemplate,
-			removeFromCellsInTemplate,
+			removeFromCellsInTemplate: () => false, // NOT IMPLEMENTED
 			removeTemplate,
 			getItemMeta,
 			updateItemMeta,
 			setFloatCell,
 			getFloatCell,
-			setCell,
-			getCell
 		}
 
 		this.helperService = {
@@ -154,9 +151,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 		
 		// Initialize Stores, Subscribe, and assign unsubscribers
 		templates.set(Object.assign({}, {}, data.planner && data.planner.templates));
-		dayData.set(Object.assign({}, {}, data.planner && data.planner.dayData))
 		this.storeSubscriptions = [
-			dayData.subscribe(() => this.queueSave()),
 			templates.subscribe(() => this.queueSave()),
 			templates.subscribe((templates) => templates && Object.keys(templates) && sortedTemplateDates.set(Object.keys(templates).sort()))
 		]
@@ -167,7 +162,6 @@ export default class UltimatePlannerPlugin extends Plugin {
 			version: 6,
 			settings: this.settings,
 			planner: {
-				dayData: get(dayData),
 				templates: get(templates),
 			},
 		}
