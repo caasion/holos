@@ -187,18 +187,18 @@
 							class="task-checkbox"
 						/>
 					{/if}
-					<span class:checked={element.checked} style={`color: ${itemColor};`}>{element.text}</span>
+					<span class:checked={element.checked}>{element.text}</span>
 					{#if element.startTime && element.duration && element.durationUnit}
-						<span class="time-badge" style={`background-color: ${itemColor};`}>
+						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 							({element.duration} {element.durationUnit})
 						</span>
 					{:else if element.startTime}
-						<span class="time-badge" style={`background-color: ${itemColor};`}>
+						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 						</span>
 					{:else if element.duration && element.durationUnit}
-						<span class="time-badge" style={`background-color: ${itemColor};`}>
+						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
 							{element.duration} {element.durationUnit}
 						</span>
 					{/if}
@@ -245,7 +245,7 @@
 		border-radius: 2px;
 		display: flex;
 		align-items: center;
-        height: 100%;
+        min-height: 24px;
 		gap: 4px;
 	}
 
