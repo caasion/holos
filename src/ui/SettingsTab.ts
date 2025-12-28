@@ -82,6 +82,19 @@ export class UltimatePlannerPluginTab extends PluginSettingTab {
         new Setting(containerEl).setName('Data Saving').setHeading();
 
         new Setting(containerEl)
+            .setName('Section Heading')
+            .setDesc('The heading in your daily notes where tasks are stored (e.g., "Ultimate Planner", "Tasks", "Daily Plan")')
+            .addText(text => 
+                text
+                    .setPlaceholder('Ultimate Planner')
+                    .setValue(this.plugin.settings.sectionHeading)
+                    .onChange(async (value) => {
+                        this.plugin.settings.sectionHeading = value || 'Ultimate Planner';
+                        await this.plugin.queueSave();
+                    })
+            );
+
+        new Setting(containerEl)
             .setName('Autosave debounce (ms)')
             .addSlider(slider => 
                 slider

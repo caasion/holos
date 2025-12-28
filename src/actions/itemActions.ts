@@ -5,7 +5,7 @@ import { addDays, parseISO, startOfDay } from 'date-fns';
 import { Menu, Notice, type App } from 'obsidian';
 import { NewItemModal } from 'src/ui/GenericNewModal';
 import { GenericEditModal } from 'src/ui/GenericEditModal';
-import { sortedTemplateDates } from 'src/state/plannerStore';
+import { getTemplate, sortedTemplateDates } from 'src/state/plannerStore';
 import { NewTemplateModal } from 'src/ui/GenericNewModal';
 import { ConfirmationModal } from 'src/ui/ConfirmationModal';
 

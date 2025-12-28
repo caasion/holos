@@ -37,6 +37,18 @@ export function getTemplate(tDate: ISODate): Record<ItemID, ItemMeta> {
     return get(templates)[tDate];
 }
 
+/** Returns the ItemID from a specified template given the item label (case insensitive). */
+export function getItemFromLabel(tDate: ISODate, label: string): ItemID {
+    const template = getTemplate(tDate);
+
+    for (const item of Object.values(template)) {
+        if (label.toLowerCase() == item.label.toLowerCase()) {
+            return item.id;
+        }
+    }
+
+    return "";
+}
 
 /** Removes an item from a template of a given date. Returns false if the given date doesn't have a template. */
 export function removeFromTemplate(tDate: ISODate, id: ItemID): boolean {

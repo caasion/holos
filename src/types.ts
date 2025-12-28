@@ -7,6 +7,40 @@ import type { App, RequestUrlResponse, RequestUrlResponsePromise } from "obsidia
 /* Plugin Data Types */
 export type ISODate = string; // Create date type for dates in ISO 8601 for simplification (not as heavy as a Date object)
 
+/* Plugin Daydata Datatypes */
+export type Time = {
+	hours: number; 
+	minutes: number; 
+}
+
+export interface LineInfo {
+	raw: string;
+    level: number;
+    text: string;
+    isTask: boolean;
+    checked?: boolean;
+    metadata?: string;
+}
+
+// An object represents a task or an event\
+export interface Element {
+	raw: string;
+	text: string;
+	children: string[];
+	isTask: boolean;
+	checked?: boolean;
+	startTime?: Time; // in ISO time
+	duration?: number; // duration value
+	durationUnit?: 'min' | 'hr'; // duration unit
+}
+
+export interface ItemData {
+	id: string; // ActionItemID + date
+	time: number; // default: retrieves from template, but can be modified otherwise
+	items: Element[];
+}
+
+/* Plugin Template Datatypes */
 export type ActionItemID = string;
 export type CalendarID = string;
 export type ItemID = ActionItemID | CalendarID;
@@ -57,6 +91,7 @@ export interface PluginSettings {
 
     /* Data Saving */
     autosaveDebounceMs: number;
+    sectionHeading: string;
 
     /* Calendar Settings */
     refreshRemoteMs: number;
@@ -70,6 +105,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weekStartOn: 0,
 
     autosaveDebounceMs: 200,
+    sectionHeading: "Ultimate Planner",
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,
@@ -89,6 +125,7 @@ export interface DataService {
     setTemplate: (tDate: ISODate, newTemplate: Record<ItemID, ItemMeta>) => void;
     addToTemplate: (tDate: ISODate, id: ItemID, meta: ItemMeta) => boolean;
     getTemplate: (tDate: ISODate) => Record<ItemID, ItemMeta>;
+    getItemFromLabel: (tDate: ISODate, label: string) => ItemID;
     removeFromTemplate: (tDate: ISODate, id: ItemID) => boolean;
     removeFromCellsInTemplate: (tDate: ISODate, id: ItemID) => boolean;
     removeTemplate: (tDate: ISODate) => boolean;
