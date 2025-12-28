@@ -109,20 +109,6 @@ export class UltimatePlannerPluginTab extends PluginSettingTab {
         
         new Setting(containerEl).setName('Remote Calendar').setHeading();
 
-        // new Setting(containerEl)
-        //     .setName('Remote Calendar Refresh Interval (min)')
-        //     .addSlider(slider => 
-        //         slider
-        //             .setDynamicTooltip()
-        //             .setLimits(1, 10, 1)
-        //             // Display as minutes by dividing when displaying and multiply when saving
-        //             .setValue(this.plugin.settings.refreshRemoteMs / 60 / 1000)
-        //             .onChange(async (value) => {
-        //                 this.plugin.settings.refreshRemoteMs = value * 60 * 1000;
-        //                 await this.plugin.queueSave();
-        //             })
-        //     )
-
         new Setting(containerEl)
             .setName('Lookahead Days')
             .setDesc('The number of days forward back, from today, where remote events update from fetches.')
@@ -136,6 +122,21 @@ export class UltimatePlannerPluginTab extends PluginSettingTab {
                         await this.plugin.queueSave();
                     })
             )
+
+        new Setting(containerEl).setName('Developer Mode').setHeading();
+
+        new Setting(containerEl)
+            .setName('Debug Mode')
+            .setDesc('Activate or deactive developer mode.')
+            .addToggle(toggle => {
+                toggle
+                    .setValue(this.plugin.settings.debug)
+                    .onChange(value => {
+                        this.plugin.settings.debug = true;
+                        this.plugin.queueSave();
+                    }
+                    )
+            })
     }
 
     hide(): void {

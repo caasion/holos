@@ -95,6 +95,9 @@ export interface PluginSettings {
     /* Calendar Settings */
     refreshRemoteMs: number;
     lookaheadDays: number;
+
+    /* Developer Mode */
+    debug: boolean;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -108,6 +111,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,
+
+    debug: false,
 }
 
 export type CalendarStatus = "idle" | "fetching" | "unchanged" | "updated" | "error";
