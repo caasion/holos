@@ -1,0 +1,186 @@
+/* Navigation Menu */
+	.header {
+		display: grid;
+    	grid-template-columns: 1fr 1fr 1fr;
+	}
+
+	.week {
+		display: flex;
+		justify-content: center; 
+		position: relative;
+	}
+
+	.week-label {
+		font-weight: 600;
+		font-size: x-large;
+		text-align: center;
+		padding: .25rem .5rem;
+		display: inline-block;
+		pointer-events: none;  
+	}
+
+	.week input[type="date"] {
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+
+		width: 100%;
+		height: 100%;
+		z-index: 1;
+
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.week input[type="date"]::-webkit-calendar-picker-indicator {
+		width: 100%;
+		cursor: pointer;
+	}
+
+	.week input[type="date"]::-webkit-datetime-edit {
+		display: none;
+	}
+
+	.new-ai {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	/* Table Header */
+	.header-cell {
+		padding: 8px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		border-right: 1px solid #ccc; 
+	}
+
+	.header-cell:last-child {
+		border-right: none;
+	}
+
+	.date-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: var(--interactive-accent);
+		opacity: 0.7;
+		border-radius: 8px;
+		padding: 4px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		transition: all 0.2s;
+		border: none;
+		cursor: pointer;
+		width: 100%;
+		height: 100%;
+	}
+
+	.date-card:hover {
+		opacity: 1;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+		transform: translateY(-2px);
+	}
+
+	.date-card.today {
+		opacity: 1;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+		border: 2px solid var(--text-accent);
+	}
+
+	.date-card.today:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.dow-label {
+		text-align: center;
+		font-size: 0.9em;
+		font-weight: 600;
+		color: white;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 4px;
+		opacity: 0.9;
+	}
+
+	.date-label {
+		text-align: center;
+		font-size: 1.8em;
+		font-weight: 700;
+		color: white;
+		line-height: 1;
+	}
+
+	/* Grid Layout */
+	.main-grid-container {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.block-container {
+		border: 1px solid #ccc; 
+	}
+
+	.header-row {
+		display: grid;
+		/* grid-template-columns is set dynamically in the Svelte component */
+		border-bottom: 2px solid #ccc;
+		padding: 8px 0;
+		background-color: var(--background-primary);
+	}
+
+	.header-cell {
+		padding: 4px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.data-grid {
+		display: grid;
+		/* grid-template-columns is set dynamically in the Svelte component */
+			grid-auto-rows: minmax(40px, auto); 
+	}
+
+	.cell {
+		padding: 4px;
+		border-right: 1px dotted #ccc;
+		border-bottom: 1px dashed #ccc;
+		border-collapse: collapse;
+		min-height: 40px; 
+	}
+
+	.row-label {
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-weight: 600;
+		margin-bottom: 4px;
+		font-size: 0.9em;
+		width: fit-content;
+	}
+
+	.empty-cell {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 12px 8px;
+		height: 100%;
+	}
+
+	.add-new-btn {
+		padding: 4px 12px;
+		background: transparent;
+		border: 1px dashed;
+		cursor: pointer;
+		border-radius: 4px;
+		font-size: 0.85em;
+		transition: all 0.2s;
+	}
+
+	.add-new-btn:hover {
+		opacity: 0.8;
+	}

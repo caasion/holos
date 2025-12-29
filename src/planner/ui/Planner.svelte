@@ -271,7 +271,7 @@
 		// Create empty item with one element
 		const newItemData: ItemData = {
 			id: itemId,
-			time: 60,
+			time: itemMeta.innerMeta.timeCommitment,
 			items: [{
 				raw: "New Item",
 				text: "New Item",
@@ -401,20 +401,16 @@
 						<div class="cell">-</div>
 					{:else if row < Object.keys(sortedTemplates[tDate]).length}
                         <div class="cell" style={`background-color: ${sortedTemplates[tDate][row].meta.color}10;`}>
-							<div>
-							{#if (col == 0 && sortedTemplates[tDate][row].meta.label !== "") || tDate == date}
-								<div class="row-label" style={`background-color: ${sortedTemplates[tDate][row].meta.color}80; color: white;`}>{sortedTemplates[tDate][row].meta.type == "calendar" ? "📅" : ""} {sortedTemplates[tDate][row].meta.label}</div>
-							{/if}
-							</div>
 						{#if (parsedContent[date] && parsedContent[date][sortedTemplates[tDate][row].id])}
-							{parsedContent[date][sortedTemplates[tDate][row].id].time ?? "60"}
-
 							<EditableCell 
 								date={date}
+								showLabel={(col == 0 && sortedTemplates[tDate][row].meta.label !== "") || tDate == date}
+								itemLabel={sortedTemplates[tDate][row].meta.label}
 								itemId={sortedTemplates[tDate][row].id}
 								itemData={parsedContent[date][sortedTemplates[tDate][row].id]}
 								onUpdate={handleCellUpdate}
 								itemColor={sortedTemplates[tDate][row].meta.color}
+								itemType = {sortedTemplates[tDate][row].meta.type}
 								/>
 							{:else}
 								<div class="empty-cell">
@@ -595,15 +591,6 @@
 		border-bottom: 1px dashed #ccc;
 		border-collapse: collapse;
 		min-height: 40px; 
-	}
-
-	.row-label {
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-weight: 600;
-		margin-bottom: 4px;
-		font-size: 0.9em;
-		width: fit-content;
 	}
 
 	.empty-cell {

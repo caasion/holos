@@ -1,16 +1,19 @@
 <script lang="ts">
-	import type { Element, ItemData, ItemID, ISODate } from "src/plugin/types";
+	import type { Element, ItemData, ItemID, ISODate, ItemType } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
 
 	interface EditableCellProps {
 		date: ISODate;
+		showLabel: boolean;
+		itemLabel: string;
 		itemId: ItemID;
 		itemData: ItemData;
 		onUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
 		itemColor?: string;
+		itemType: ItemType;
 	}
 
-	let { date, itemId, itemData, onUpdate, itemColor = "#666" }: EditableCellProps = $props();
+	let { date, showLabel, itemLabel, itemId, itemData, onUpdate, itemColor = "#666", itemType }: EditableCellProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editingIndex = $state<number | null>(null);
@@ -205,6 +208,9 @@
 </script>
 
 <div class="editable-cell">
+	{#if showLabel}
+		<div class="row-label" style={`background-color: ${itemColor}80; color: white;`}>{itemType == "calendar" ? "📅" : ""} {itemLabel}</div>
+	{/if}
 	{#each itemData.items as element, index}
 		<div class="element-row">
 			{#if isEditing && editingIndex === index}
@@ -379,5 +385,14 @@
 		background-color: var(--background-modifier-hover);
 		border-color: var(--interactive-accent);
 		color: var(--text-normal);
+	}
+
+	.row-label {
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-weight: 600;
+		margin-bottom: 4px;
+		font-size: 0.9em;
+		width: fit-content;
 	}
 </style>
