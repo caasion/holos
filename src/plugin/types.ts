@@ -51,9 +51,9 @@ export type ItemMeta = ActionItemMeta | CalendarMeta;
 export type ItemType = "action" | "calendar";
 
 export interface ItemInnerMeta {
-    timeCommitment?: number; 
-    habits?: string[];
-    journalHeader?: string;
+    timeCommitment: number; 
+    habits: string[];
+    journalHeader: string;
 }
 
 export interface ActionItemMeta {
