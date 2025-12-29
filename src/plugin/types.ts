@@ -81,8 +81,27 @@ export interface CalendarMeta {
     contentHash?: string;
 }
 
+export type TDate = ISODate;
+export type ItemDict = Record<ItemID, ItemMeta>;
+
 export interface PlannerState {
-    templates: Record<ISODate, Record<ItemID, ItemMeta>>;
+    templates: Record<TDate, ItemDict>;
+}
+
+/* Planner Table Rendering */
+export interface DateMapping {
+    date: ISODate;
+    tDate: TDate;
+}
+
+export interface Item {
+    id: ItemID;
+    meta: ItemMeta;
+}
+
+export interface BlockMeta {
+    rows: number;
+    dateTDateMapping: DateMapping[];
 }
 
 /* Data persistence */

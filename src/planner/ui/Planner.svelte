@@ -3,9 +3,8 @@
 	import type { App, TFile } from "obsidian";
 	import type { CalendarPipeline } from "src/calendar/calendarPipelines";
 	import type { PlannerActions } from "src/planner/logic/itemActions";
-	import type { DataService, HelperService, ISODate, ItemData, ItemID, ItemMeta, PluginSettings } from "src/plugin/types";
+	import type { BlockMeta, DataService, DateMapping, HelperService, ISODate, Item, ItemData, ItemDict, ItemID, ItemMeta, PluginSettings, TDate } from "src/plugin/types";
 	import { tick } from "svelte";
-	import { templates } from "src/planner/plannerStore";
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { getAllDailyNotes, getDailyNote, createDailyNote } from "obsidian-daily-notes-interface";
 	import moment from "moment";
@@ -13,6 +12,9 @@
 	import FloatBlock from "src/planner/ui/FloatBlock.svelte";
 	import TemplateEditor from "src/templates/TemplateEditor.svelte";
 	import EditableCell from "./EditableCell.svelte";
+	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
+	import DebugBlock from "src/playground/DebugBlock.svelte";
+	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -36,84 +38,25 @@
 	// Debounce timer for writes
 	let writeTimer: NodeJS.Timeout | null = null;
 
-	/* Table Rendering */
-	const weekFormat = settings.weekFormat;
-	const columns = settings.columns;
-	const blocks = settings.blocks;
+	/* === Table Rendering === */
+	// Simplify settings
+	const { weekFormat, columns, blocks, weekStartOn} = settings;
 
-	let anchor = $state<ISODate>(helper.getISODate(new Date()));
+	// Set default anchor date to today
+	const today = getISODate(new Date());
+	let anchor = $state<ISODate>(today);
 
-	let dates = $derived.by<ISODate[]>(() => {
-		const anchorDate = parseISO(anchor);
+	// Create an array of relevant ISODates from function getISODates()
+	let dates = $derived<ISODate[]>(weekFormat ? getISODates(anchor, blocks, weekStartOn) : getISODates(anchor, columns * blocks))
 
-		if (weekFormat) {
-			return helper.getISODates(anchorDate, blocks, settings.weekStartOn);
-		} else {
-			return helper.getISODates(anchorDate, columns * blocks)
-		}
-	})
+	// Create a dictionary of each date mapped to its respective template date
+	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, plannerActions));
 
-	interface ColumnMeta {
-		date: ISODate;
-		tDate: ISODate;
-	}
-
-	let columnsMeta: ColumnMeta[] = $derived.by(() => {
-		const _ = $templates; // trick to ensure reactivity.
-
-		return dates.map(date => ({
-			date,
-			tDate: plannerActions.getTemplateDate(date),
-		}));
-	});
-
-	interface RenderItem {
-		id: ItemID;
-		meta: ItemMeta;
-	}
-
-	type SortedTemplates = Record<ISODate, RenderItem[]>;
-
-	let sortedTemplates = $derived.by<SortedTemplates>(() => {
-		const allTemplateDates = new Set(columnsMeta.map(c => c.tDate));
-
-		const result: SortedTemplates = {};
-
-		allTemplateDates.forEach(date => {
-			if (date != "") {
-				const rawTemplate = data.getTemplate(date); 
-			
-				const itemsArray: RenderItem[] = Object.entries(rawTemplate).map(([id, meta]) => ({id,meta}));
-
-				itemsArray.sort((a, b) => a.meta.order - b.meta.order);
-
-				result[date] = itemsArray;
-			}			
-		});
-
-		return result;
-	});
+	// Convert a template into a sorted array of items
+	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, data));
 	
-	interface BlockMeta {
-		rows: number; // Use a function to get the # of rows to render
-		dates: ColumnMeta[];
-	}
-
-	let blocksMeta = $derived.by<BlockMeta[]>(() => {
-		let meta: BlockMeta[] = [];
-		
-		for (let i = 0; i < blocks; i++) {
-			const columnChunk: ColumnMeta[] = columnsMeta.slice(columns * i, columns * (i + 1));
-			const templateLengths: number[] = columnChunk.map(({ date, tDate}) => tDate != "" ? sortedTemplates[tDate].length : 0)
-
-			meta.push({
-				rows: Math.max(...templateLengths),
-				dates: columnChunk,
-			})
-		}
-
-		return meta;
-	})
+	// Calculate the number of rows needed and derive the dates involved in each block
+	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
 
     async function getDailyNoteContents(file: TFile): Promise<string | null> {
         if (file) {
@@ -307,11 +250,9 @@
 	}
 
 	// Currently doesn't work
-	async function goTo(newDate: ISODate) {
+	function goTo(newDate: ISODate) {
 		/* Maintain focus when switching weeks */
 		anchor = newDate;
-		await tick();
-		// focusCell(focus.row, focus.col);
 	}
 
 	// Open daily note for a specific date
@@ -346,10 +287,10 @@
 
 <h1>The Ultimate Planner</h1>
 
-<!-- <DebugBlock label={"Dates:"} object={dates} />
+<DebugBlock label={"Dates:"} object={dates} />
 <DebugBlock label={"Columns Meta:"} object={columnsMeta} />
 <DebugBlock label={"Sorted Templates:"} object={sortedTemplates} />
-<DebugBlock label={"Blocks Meta:"} object={blocksMeta} /> -->
+<DebugBlock label={"Blocks Meta:"} object={blocksMeta} />
 
 
 <div class="header">
