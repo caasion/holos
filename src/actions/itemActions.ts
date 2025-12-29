@@ -3,10 +3,10 @@ import { get } from 'svelte/store';
 import { CalendarPipeline } from './calendarPipelines';
 import { addDays, parseISO, startOfDay } from 'date-fns';
 import { Menu, Notice, type App } from 'obsidian';
-import { NewItemModal } from 'src/ui/GenericNewModal';
-import { GenericEditModal } from 'src/ui/GenericEditModal';
+import { NewItemModal } from 'src/ui/NewItemModal';
+import { GenericEditModal } from 'src/ui/EditItemModal';
 import { getTemplate, sortedTemplateDates } from 'src/state/plannerStore';
-import { NewTemplateModal } from 'src/ui/GenericNewModal';
+import { NewTemplateModal } from 'src/ui/NewTemplateModal';
 import { ConfirmationModal } from 'src/ui/ConfirmationModal';
 
 export interface PlannerServiceDeps {
