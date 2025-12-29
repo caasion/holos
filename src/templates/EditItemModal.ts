@@ -9,7 +9,8 @@ export class GenericEditModal extends Modal {
         let meta: ItemMeta = { ...initial };
 
         new Setting(contentEl)
-            .setName("Name: ")
+            .setName("Name")
+            .setDesc("The display name of the item (cannot be empty).")
             .addText((t) => t.setValue(meta.label).onChange((v) => (meta.label = v)));
         
         // Create error label (hidden by default)
@@ -22,17 +23,26 @@ export class GenericEditModal extends Modal {
 
         new Setting(contentEl)
             .setName("ID")
+            .setDesc("The ID of the item (randomly generated and unmodifiable).")
             .addText((t) => {
                 t.setDisabled(true);
                 t.setValue(meta.id);
             });
 
         new Setting(contentEl)
-            .setName("Color: ")
+            .setName("Color")
+            .setDesc("The accent color of the item.")
             .addColorPicker(c =>
                 c.setValue(meta.color)
                  .onChange((v) => meta.color = v)
             );
+
+        if (meta.type === "calendar") {
+            new Setting(contentEl)
+                .setName("Remote Calendar URL")
+                .setDesc("The link to the remote calendar (where events are fetched from).")
+                .addText((t) => t.setValue((meta as CalendarMeta).url ?? "").onChange((v) => ((meta as CalendarMeta).url = v)));
+        }
 
         new Setting(contentEl)
             .setName("Time Commitment")
@@ -55,12 +65,6 @@ export class GenericEditModal extends Modal {
                 t.setValue("")
                 t.onChange(v => meta.innerMeta.journalHeader = v)
             })
-
-        if (meta.type === "calendar") {
-            new Setting(contentEl)
-                .setName("Remote Calendar URL: ")
-                .addText((t) => t.setValue((meta as CalendarMeta).url ?? "").onChange((v) => ((meta as CalendarMeta).url = v)));
-        }
 
         new Setting(contentEl)
             .addButton((b) => b.setButtonText("Save").setCta().onClick(() => {

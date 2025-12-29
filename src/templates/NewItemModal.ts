@@ -31,7 +31,7 @@ export class NewItemModal extends Modal {
         new Setting(contentEl).setName("Create New Item").setHeading();
 
         new Setting(contentEl)
-            .setName("Name: ")
+            .setName("Name")
             .setDesc("The display name of the item (cannot be empty).")
             .addText((t) => t.onChange((v) => (meta.label = v)));
 
@@ -53,13 +53,19 @@ export class NewItemModal extends Modal {
             });
 
         new Setting(contentEl)
-            .setName("Color: ")
+            .setName("Color")
             .setDesc("The accent color of the item.")
             .addColorPicker(c => {
                 c.setValue(meta.color);
                 c.onChange((v) => meta.color = v);
-            }
-            );
+            });
+        
+        if (type === "calendar") {
+            new Setting(contentEl)
+                .setName("Remote Calendar URL")
+                .setDesc("The link to the remote calendar (where events are fetched from).")
+                .addText((t) => t.onChange((v) => ((meta as CalendarMeta).url = v)));
+        }
 
         new Setting(contentEl)
             .setName("Time Commitment")
@@ -82,12 +88,6 @@ export class NewItemModal extends Modal {
                 t.setValue("")
                 t.onChange(v => meta.innerMeta.journalHeader = v)
             })
-
-        if (type === "calendar") {
-            new Setting(contentEl)
-                .setName("Remote Calendar URL: ")
-                .addText((t) => t.onChange((v) => ((meta as CalendarMeta).url = v)));
-        }
 
         new Setting(contentEl)
             .addButton((b) => b.setButtonText("Add").setCta().onClick(() => {
