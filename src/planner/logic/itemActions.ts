@@ -1,13 +1,13 @@
-import type { ISODate, DataService, HelperService, ItemMeta, CalendarMeta, ItemID, PluginSettings } from '../types';
+import type { ISODate, DataService, HelperService, ItemMeta, CalendarMeta, ItemID, PluginSettings } from '../../plugin/types';
 import { get } from 'svelte/store';
-import { CalendarPipeline } from './calendarPipelines';
+import { CalendarPipeline } from '../../calendar/calendarPipelines';
 import { addDays, parseISO, startOfDay } from 'date-fns';
 import { Menu, Notice, type App } from 'obsidian';
-import { NewItemModal } from 'src/ui/GenericNewModal';
-import { GenericEditModal } from 'src/ui/GenericEditModal';
-import { getTemplate, sortedTemplateDates } from 'src/state/plannerStore';
-import { NewTemplateModal } from 'src/ui/GenericNewModal';
-import { ConfirmationModal } from 'src/ui/ConfirmationModal';
+import { NewItemModal } from 'src/templates/NewItemModal';
+import { GenericEditModal } from 'src/templates/EditItemModal';
+import { getTemplate, sortedTemplateDates } from 'src/planner/plannerStore';
+import { NewTemplateModal } from 'src/templates/NewTemplateModal';
+import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
 
 export interface PlannerServiceDeps {
     settings: PluginSettings;

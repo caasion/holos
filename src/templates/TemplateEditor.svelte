@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { type App } from "obsidian";
-	import { PlannerActions } from "src/actions/itemActions";
-	import { sortedTemplateDates, templates } from "src/state/plannerStore";
-	import type { HelperService, ISODate } from "src/types";
+	import { PlannerActions } from "src/planner/logic/itemActions";
+	import { sortedTemplateDates, templates } from "src/planner/plannerStore";
+	import type { HelperService, ISODate } from "src/plugin/types";
 
     interface ViewProps {
         app: App;
