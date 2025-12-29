@@ -60,9 +60,21 @@ export class PlannerParser {
 				// Initialize the new item
 				let text = line.replace(/^- (\[.\] )?/, '').trim();
 				
+				// Parse time commitment from pattern: Action Item (2 hr|30 mins)
+				let timeCommitment = 60; // default
+				const timeMatch = text.match(/\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
+				if (timeMatch) {
+					const [fullMatch, rawDuration, units] = timeMatch;
+					const duration = parseInt(rawDuration);
+					// Convert to minutes
+					timeCommitment = units.startsWith('h') ? duration * 60 : duration;
+					// Remove the time commitment from the text
+					text = text.replace(fullMatch, '').trim();
+				}
+				
 				currItem = {
 					id: this.data.getItemFromLabel(this.plannerActions.getTemplateDate(date), text),
-					time: 60,
+					time: timeCommitment,
 					items: [],
 				}
 				
@@ -218,7 +230,20 @@ export class PlannerParser {
         let result = '';
         
         // Add item header with label
-        result += `- ${itemMeta.label}\n`;
+        result += `- ${itemMeta.label}`;
+        
+        // Add time commitment if not default (60 minutes)
+        if (itemData.time && itemData.time !== 60) {
+            if (itemData.time % 60 === 0) {
+                // Display in hours if it's a whole number of hours
+                result += ` (${itemData.time / 60} hr)`;
+            } else {
+                // Display in minutes
+                result += ` (${itemData.time} min)`;
+            }
+        }
+        
+        result += '\n';
         
         // Add all elements
         for (const element of itemData.items) {
