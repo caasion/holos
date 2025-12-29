@@ -47,6 +47,12 @@ export type ItemID = ActionItemID | CalendarID;
 export type ItemMeta = ActionItemMeta | CalendarMeta;
 export type ItemType = "action" | "calendar";
 
+export interface ItemInnerMeta {
+    timeCommitment?: number; 
+    habits?: string[];
+    journalHeader?: string;
+}
+
 export interface ActionItemMeta {
     id: ActionItemID;
     type: "action";
@@ -54,6 +60,7 @@ export interface ActionItemMeta {
     label: string;
     color: string;
     floatCell: string;
+    innerMeta: ItemInnerMeta;
 }
 
 export interface CalendarMeta {
@@ -63,6 +70,7 @@ export interface CalendarMeta {
     label: string;
     color: string;
     floatCell: string;
+    innerMeta: ItemInnerMeta;
     url: string;
     etag?: string;
     lastFetched?: number;
