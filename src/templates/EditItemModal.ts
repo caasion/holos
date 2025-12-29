@@ -34,6 +34,28 @@ export class GenericEditModal extends Modal {
                  .onChange((v) => meta.color = v)
             );
 
+        new Setting(contentEl)
+            .setName("Time Commitment")
+            .setDesc("The planned daily commitment (in hours) per day. Set to 0 for none.")
+            .addSlider(s => {
+                s.setValue(0)
+                s.setLimits(0, 12, 1)
+                s.onChange(v => meta.innerMeta.timeCommitment = v)
+            })
+
+        const descFragment = document.createDocumentFragment();
+        descFragment.appendText("The header text which the plugin should search for journal information.");
+        descFragment.createEl("br");
+        descFragment.appendText("Include exact markdown syntax. Leave blank if unknown.");
+
+        new Setting(contentEl)
+            .setName("Journal Header")
+            .setDesc(descFragment)
+            .addText(t => {
+                t.setValue("")
+                t.onChange(v => meta.innerMeta.journalHeader = v)
+            })
+
         if (meta.type === "calendar") {
             new Setting(contentEl)
                 .setName("Remote Calendar URL: ")
