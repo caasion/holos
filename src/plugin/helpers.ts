@@ -1,12 +1,6 @@
 import type { ISODate } from './types';
 import { addDays, eachDayOfInterval, endOfWeek, format, parseISO, startOfWeek, type Day } from 'date-fns';
 
-
-/** Returns a randomUUID() with a given prefix. */
-export function generateID(prefix: string) {
-    return prefix + crypto.randomUUID();
-}
-
 /** Formats a Date into an ISODate. */
 export function getISODate(date: Date): ISODate {
     return format(date, "yyyy-MM-dd")
@@ -18,16 +12,18 @@ export function addDaysISO(iso: ISODate, n: number): ISODate {
 }
 
 /** Get the ISODates from and including today until the specified number. */
-export function getISODates(anchor: Date, days: number): ISODate[];
+export function getISODates(anchor: ISODate, days: number): ISODate[];
 /** Get the ISODates of the weeks from and including this week given the anchor, week number, and the day the week starts on. */
-export function getISODates(anchor: Date, weeks: number, weekStartsOn: Day): ISODate[];
-export function getISODates(anchor: Date, amount: number, weekStartsOn?: Day) {
+export function getISODates(anchor: ISODate, weeks: number, weekStartsOn: Day): ISODate[];
+export function getISODates(anchor: ISODate, amount: number, weekStartsOn?: Day) {
     if (weekStartsOn != undefined) { // If we are looking for the dates of a week
         let dates: ISODate[] = [];
+
+        const anchorDate: Date = parseISO(anchor);
         
         for (let i = 0; i < amount; i++) {
-            const start = startOfWeek(addDays( anchor, i * 7 ), { weekStartsOn });
-            const end = endOfWeek(addDays( anchor, i * 7 ), { weekStartsOn });
+            const start = startOfWeek(addDays( anchorDate, i * 7 ), { weekStartsOn });
+            const end = endOfWeek(addDays( anchorDate, i * 7 ), { weekStartsOn });
 
             const days = eachDayOfInterval({ start, end });
 
@@ -43,16 +39,24 @@ export function getISODates(anchor: Date, amount: number, weekStartsOn?: Day) {
 }
 
 /** [PURE HELPER] Gets a well-formmated label given a date range. */
-export function getLabelFromDateRange(first: Date, last: Date): string {
-    if (first.getFullYear() === last.getFullYear()) {
-        if (first.getMonth() === last.getMonth()) {
-            return `${format(first, "MMM")} ${format(first, "dd")} – ${format(last, "dd")}, ${format(first, "yyyy")}`
+export function getLabelFromDateRange(first: ISODate, last: ISODate): string {
+    const firstDate: Date = parseISO(first);
+    const lastDate: Date = parseISO(last);
+
+    if (firstDate.getFullYear() === lastDate.getFullYear()) {
+        if (firstDate.getMonth() === lastDate.getMonth()) {
+            return `${format(firstDate, "MMM dd")} – ${format(lastDate, "dd, yyyy")}`
         } else {
-            return `${format(first, "MMM")} ${format(first, "dd")} – ${format(last, "MMM")} ${format(last, "dd")}, ${format(first, "yyyy")}`
+            return `${format(firstDate, "MMM dd")} – ${format(lastDate, "MMM dd, yyyy")}`
         }
     } else {
-        return `${format(first, "MMM")} ${format(first, "dd")}, ${format(first, "yyyy")} – ${format(last, "MMM")} ${format(last, "dd")}, ${format(last, "yyyy")}`
+        return `${format(firstDate, "MMM dd, yyyy")} – ${format(lastDate, "MMM dd, yyyy")}`
     }
+}
+
+/** Returns a randomUUID() with a given prefix. */
+export function generateID(prefix: string) {
+    return prefix + crypto.randomUUID();
 }
 
 /** [PURE HELPER] Hash a string using SHA-1. */
