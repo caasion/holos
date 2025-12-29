@@ -2,7 +2,7 @@ import { differenceInMinutes, format } from "date-fns";
 import IcalExpander from "ical-expander";
 import ICAL from "ical.js";
 import type { occurrenceDetails } from "ical.js/dist/types/event";
-import type { CalendarID, ISODate, NormalizedEvent } from "src/types";
+import type { CalendarID, ISODate, NormalizedEvent } from "src/plugin/types";
 
 /** [PURE HELPER] Converts an ICS string into a list of events with details. */
 export function parseICS(ics: string, calendarId: string): NormalizedEvent[] {

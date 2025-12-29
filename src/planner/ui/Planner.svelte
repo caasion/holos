@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { format, parseISO } from "date-fns";
 	import type { App, TFile } from "obsidian";
-	import type { CalendarPipeline } from "src/actions/calendarPipelines";
-	import type { PlannerActions } from "src/actions/itemActions";
-	import type { DataService, HelperService, ISODate, ItemData, ItemID, ItemMeta, PluginSettings } from "src/types";
+	import type { CalendarPipeline } from "src/calendar/calendarPipelines";
+	import type { PlannerActions } from "src/planner/logic/itemActions";
+	import type { DataService, HelperService, ISODate, ItemData, ItemID, ItemMeta, PluginSettings } from "src/plugin/types";
 	import { tick } from "svelte";
-	import { templates } from "src/state/plannerStore";
-	import { PlannerParser } from "src/lib/parser";
+	import { templates } from "src/planner/plannerStore";
+	import { PlannerParser } from "src/planner/logic/parser";
 	import { getAllDailyNotes, getDailyNote, createDailyNote } from "obsidian-daily-notes-interface";
 	import moment from "moment";
 	import { Notice } from "obsidian";
-	import FloatBlock from "src/ui/FloatBlock.svelte";
-	import TemplateEditor from "src/ui/TemplateEditor.svelte";
+	import FloatBlock from "src/planner/ui/FloatBlock.svelte";
+	import TemplateEditor from "src/templates/TemplateEditor.svelte";
 	import EditableCell from "./EditableCell.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.

@@ -1,6 +1,6 @@
 import { Modal, App, Setting } from "obsidian";
-import { templates } from "src/state/plannerStore";
-import type { ISODate } from "src/types";
+import { templates } from "src/planner/plannerStore";
+import type { ISODate } from "src/plugin/types";
 import { get } from "svelte/store";
 
 export class NewTemplateModal extends Modal {

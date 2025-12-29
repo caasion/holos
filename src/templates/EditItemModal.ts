@@ -1,5 +1,5 @@
 import { Modal, Setting, type App } from "obsidian";
-import type { CalendarMeta, ItemMeta } from "src/types";
+import type { CalendarMeta, ItemMeta } from "src/plugin/types";
 
 export class GenericEditModal extends Modal {
     constructor(app: App, initial: ItemMeta, onSubmit: (meta: ItemMeta) => void) {

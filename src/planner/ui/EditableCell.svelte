@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Element, ItemData, ItemID, ISODate } from "src/types";
+	import type { Element, ItemData, ItemID, ISODate } from "src/plugin/types";
 
 	interface EditableCellProps {
 		date: ISODate;

@@ -1,8 +1,8 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
-import UltimatePlannerView from './UltimatePlanner.svelte';
+import UltimatePlannerView from './ui/Planner.svelte';
 import UltimatePlannerPlugin from '../main';
-import TemplateEditor from "./TemplateEditor.svelte";
+import TemplateEditor from "../templates/TemplateEditor.svelte";
 
 export const PLANNER_VIEW_TYPE = "ultimate-planner-view"
 
@@ -33,6 +33,7 @@ export class PlannerView extends ItemView {
             helper: this.plugin.helperService,
             plannerActions: this.plugin.plannerActions,
             calendarPipeline: this.plugin.calendarPipeline,
+            parser: this.plugin.parserService
         }})
     }
 

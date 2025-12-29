@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store";
-import type { ISODate, ItemID, ItemMeta } from "src/types";
+import type { ISODate, ItemID, ItemMeta } from "src/plugin/types";
 import { addDays, eachDayOfInterval, parseISO } from "date-fns";
-import { addDaysISO, getISODate } from "src/actions/helpers";
+import { getISODate } from "src/plugin/helpers";
 
 export const templates = writable<Record<ISODate, Record<ItemID, ItemMeta>>>({});
 export const sortedTemplateDates = writable<ISODate[]>([]);

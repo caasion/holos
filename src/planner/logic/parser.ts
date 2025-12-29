@@ -1,7 +1,7 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
-import type { PlannerActions } from "src/actions/itemActions";
-import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo } from "src/types";
+import type { PlannerActions } from "src/planner/logic/itemActions";
+import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo } from "src/plugin/types";
 
 export interface ParserDeps {
 	data: DataService;

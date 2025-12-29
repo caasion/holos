@@ -1,8 +1,6 @@
 import { Modal, App, Setting } from "obsidian";
-import { generateID } from "src/actions/helpers";
-import { templates } from "src/state/plannerStore";
-import type { ISODate, CalendarMeta, ItemType, ItemMeta } from "src/types";
-import { get } from "svelte/store";
+import { generateID } from "src/plugin/helpers";
+import type { ISODate, CalendarMeta, ItemType, ItemMeta } from "src/plugin/types";
 
 export class NewItemModal extends Modal {
     constructor(app: App, type: ItemType, tDate: ISODate, onSubmit: (date: ISODate, meta: ItemMeta) => void) {

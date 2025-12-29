@@ -1,4 +1,4 @@
-import type { ISODate } from '../types';
+import type { ISODate } from './types';
 import { addDays, eachDayOfInterval, endOfWeek, format, parseISO, startOfWeek, type Day } from 'date-fns';
 
 
