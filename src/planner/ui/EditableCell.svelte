@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Element, ItemData, ItemID, ISODate } from "src/plugin/types";
+	import CircularProgress from "./CircularProgress.svelte";
 
 	interface EditableCellProps {
 		date: ISODate;
@@ -22,6 +23,15 @@
         
         // Build the raw text including time info
         editText = element.text;
+        
+        // Add task duration tracking if available
+        if (element.taskProgress !== undefined && element.taskUnit) {
+            if (element.taskLimit !== undefined) {
+                editText += ` [${element.taskProgress}/${element.taskLimit} ${element.taskUnit}]`;
+            } else {
+                editText += ` [${element.taskProgress}/ ${element.taskUnit}]`;
+            }
+        }
         
         if (element.startTime && element.duration && element.durationUnit) {
             const hours = element.startTime.hours.toString().padStart(2, '0');
@@ -50,10 +60,35 @@
 
 		const updatedItems = [...itemData.items];
 		
+		// Parse the text for task duration: [X/Y hr] or [X/Y min] or [X/ hr]
+		let textWithoutTaskDuration = editText;
+		let taskProgress: number | undefined;
+		let taskLimit: number | undefined;
+		let taskUnit: 'min' | 'hr' | undefined;
+		
+		const taskDurationMatch = textWithoutTaskDuration.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
+		if (taskDurationMatch) {
+			const [fullMatch, progress, limit, unit] = taskDurationMatch;
+			taskProgress = parseInt(progress);
+			taskLimit = limit ? parseInt(limit) : undefined;
+			taskUnit = unit as 'min' | 'hr';
+			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+		} else {
+			// Handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
+			const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
+			if (incompleteMatch) {
+				const [fullMatch, limit, unit] = incompleteMatch;
+				taskProgress = 0;
+				taskLimit = parseInt(limit);
+				taskUnit = unit as 'min' | 'hr';
+				textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+			}
+		}
+		
 		// Parse the text for time info: "Task @ 10:00 (2 hr)", "Task @ 10:00", or "Task (2 hr)"
-		const withFullTimeMatch = editText.match(/(.*?) @ (\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-		const withStartTimeMatch = editText.match(/(.*?) @ (\d{1,2}):(\d{2})/);
-		const withDurationMatch = editText.match(/(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
+		const withFullTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
+		const withStartTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})/);
+		const withDurationMatch = textWithoutTaskDuration.match(/(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
 		
 		const updatedElement: Element = {
 			...updatedItems[index]
@@ -79,10 +114,21 @@
 			updatedElement.durationUnit = units.startsWith('h') ? 'hr' : 'min';
 		} else {
 			// No time info
-			updatedElement.text = editText.trim();
+			updatedElement.text = textWithoutTaskDuration.trim();
 			delete updatedElement.startTime;
 			delete updatedElement.duration;
 			delete updatedElement.durationUnit;
+		}
+		
+		// Set task duration tracking
+		if (taskProgress !== undefined) {
+			updatedElement.taskProgress = taskProgress;
+			updatedElement.taskLimit = taskLimit;
+			updatedElement.taskUnit = taskUnit;
+		} else {
+			delete updatedElement.taskProgress;
+			delete updatedElement.taskLimit;
+			delete updatedElement.taskUnit;
 		}
 		
 		updatedItems[index] = updatedElement;
@@ -188,6 +234,14 @@
 						/>
 					{/if}
 					<span class:checked={element.checked}>{element.text}</span>
+					{#if element.taskProgress !== undefined && element.taskUnit}
+						<CircularProgress 
+							progress={element.taskProgress} 
+							limit={element.taskLimit} 
+							unit={element.taskUnit}
+							size={20}
+						/>
+					{/if}
 					{#if element.startTime && element.duration && element.durationUnit}
 						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}

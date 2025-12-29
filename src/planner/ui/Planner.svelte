@@ -401,10 +401,14 @@
 						<div class="cell">-</div>
 					{:else if row < Object.keys(sortedTemplates[tDate]).length}
                         <div class="cell" style={`background-color: ${sortedTemplates[tDate][row].meta.color}10;`}>
+							<div>
 							{#if (col == 0 && sortedTemplates[tDate][row].meta.label !== "") || tDate == date}
-							<div class="row-label" style={`background-color: ${sortedTemplates[tDate][row].meta.color}80; color: white;`}>{sortedTemplates[tDate][row].meta.type == "calendar" ? "📅" : ""} {sortedTemplates[tDate][row].meta.label}</div>
-						{/if}
+								<div class="row-label" style={`background-color: ${sortedTemplates[tDate][row].meta.color}80; color: white;`}>{sortedTemplates[tDate][row].meta.type == "calendar" ? "📅" : ""} {sortedTemplates[tDate][row].meta.label}</div>
+							{/if}
+							</div>
 						{#if (parsedContent[date] && parsedContent[date][sortedTemplates[tDate][row].id])}
+							{parsedContent[date][sortedTemplates[tDate][row].id].time ?? "60"}
+
 							<EditableCell 
 								date={date}
 								itemId={sortedTemplates[tDate][row].id}
