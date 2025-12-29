@@ -1,5 +1,5 @@
 import { Modal, Setting, type App } from "obsidian";
-import type { ActionItemMeta, CalendarMeta, ItemMeta } from "src/types";
+import type { CalendarMeta, ItemMeta } from "src/types";
 
 export class GenericEditModal extends Modal {
     constructor(app: App, initial: ItemMeta, onSubmit: (meta: ItemMeta) => void) {
@@ -11,6 +11,14 @@ export class GenericEditModal extends Modal {
         new Setting(contentEl)
             .setName("Name: ")
             .addText((t) => t.setValue(meta.label).onChange((v) => (meta.label = v)));
+        
+        // Create error label (hidden by default)
+        const errorLabel = document.createElement("label");
+            errorLabel.textContent = "Item name cannot be empty";
+            errorLabel.style.color = "var(--text-error)";
+            errorLabel.style.display = "none";
+        
+        contentEl.appendChild(errorLabel);
 
         new Setting(contentEl)
             .setName("ID")
@@ -34,6 +42,10 @@ export class GenericEditModal extends Modal {
 
         new Setting(contentEl)
             .addButton((b) => b.setButtonText("Save").setCta().onClick(() => {
+                if (meta.label == "") {
+                    errorLabel.style.display = "block";
+                    return;
+                }
                 onSubmit(meta);
                 this.close();
             }))

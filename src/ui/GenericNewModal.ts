@@ -37,6 +37,14 @@ export class NewItemModal extends Modal {
             .setName("Name: ")
             .addText((t) => t.onChange((v) => (meta.label = v)));
 
+        // Create error label (hidden by default)
+        const errorLabel = document.createElement("label");
+            errorLabel.textContent = "Item name cannot be empty";
+            errorLabel.style.color = "var(--text-error)";
+            errorLabel.style.display = "none";
+        
+        contentEl.appendChild(errorLabel);
+
         new Setting(contentEl)
             .setName("ID")
             .addText((t) => {
@@ -60,6 +68,10 @@ export class NewItemModal extends Modal {
 
         new Setting(contentEl)
             .addButton((b) => b.setButtonText("Add").setCta().onClick(() => {
+                if (meta.label == "") {
+                    errorLabel.style.display = "block";
+                    return;
+                }
                 onSubmit(date, meta);
                 this.close();
             }))
