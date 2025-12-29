@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import type { CalendarState } from "src/types";
+import type { CalendarState } from "src/plugin/types";
 
 export const calendarState = writable<CalendarState>({ status: "idle" });
 

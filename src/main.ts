@@ -1,17 +1,17 @@
 import { Plugin } from 'obsidian';
-import { PLANNER_VIEW_TYPE, PlannerView } from './ui/PlannerView';
-import { UltimatePlannerPluginTab } from './ui/SettingsTab';
-import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './state/plannerStore';
+import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
+import { UltimatePlannerPluginTab } from './plugin/SettingsTab';
+import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './planner/plannerStore';
 import { get, type Unsubscriber } from 'svelte/store';
-import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './types';
-import { CalendarPipeline } from './actions/calendarPipelines';
-import { PlannerActions } from './actions/itemActions';
-import { calendarState, fetchToken } from './state/calendarState';
-import { hashText, generateID, getISODate, addDaysISO, swapArrayItems, getISODates, getLabelFromDateRange } from './actions/helpers';
-import { parseICS, parseICSBetween, normalizeEvent, normalizeOccurrenceEvent, buildEventDictionaries, getEventLabels } from './actions/calendarHelper';
-import { fetchFromUrl, detectFetchChange } from './actions/fetch';
+import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
+import { CalendarPipeline } from './calendar/calendarPipelines';
+import { PlannerActions } from './planner/logic/itemActions';
+import { calendarState, fetchToken } from './calendar/calendarState';
+import { hashText, generateID, getISODate, addDaysISO, swapArrayItems, getISODates, getLabelFromDateRange } from './plugin/helpers';
+import { parseICS, parseICSBetween, normalizeEvent, normalizeOccurrenceEvent, buildEventDictionaries, getEventLabels } from './calendar/calendarHelper';
+import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
-import { PlannerParser } from './lib/parser';
+import { PlannerParser } from './planner/logic/parser';
 
 export default class UltimatePlannerPlugin extends Plugin {
 	settings: PluginSettings;

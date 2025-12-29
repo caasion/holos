@@ -1,5 +1,5 @@
 import { Notice } from "obsidian";
-import type { CalendarHelperService, CalendarID, CalendarMeta, CalendarStatus, DataService, FetchService, HelperService, ISODate, NormalizedEvent } from "../types";
+import type { CalendarHelperService, CalendarID, CalendarMeta, CalendarStatus, DataService, FetchService, HelperService, ISODate, NormalizedEvent } from "../plugin/types";
 import { get } from "svelte/store";
 
 export interface CalendarServiceDeps {
