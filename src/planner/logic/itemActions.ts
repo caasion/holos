@@ -29,7 +29,7 @@ export class PlannerActions {
         this.calendarPipelines = deps.calendarPipelines;
     }
 
-    /** Uses binary search to get the template date for a given date. */
+    /** Uses binary search to get the template date for a given date. Returns blank if not found. */
     public getTemplateDate(date: ISODate): ISODate {
         const dates: ISODate[] = get(sortedTemplateDates);
 
