@@ -612,12 +612,6 @@
 		height: 100%;
 	}
 
-	.empty-message {
-		color: var(--text-muted);
-		font-style: italic;
-		font-size: 0.9em;
-	}
-
 	.add-new-btn {
 		padding: 4px 12px;
 		background: transparent;
