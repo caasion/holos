@@ -1,4 +1,4 @@
-import type { ISODate } from './types';
+import type { ISODate, Element } from './types';
 import { addDays, eachDayOfInterval, endOfWeek, format, parseISO, startOfWeek, type Day } from 'date-fns';
 
 /** Formats a Date into an ISODate. */
@@ -74,4 +74,30 @@ export function swapArrayItems<T>(array: T[], a: number, b: number): T[] {
     const newArray = array.slice();
     [newArray[a], newArray[b]] = [newArray[b], newArray[a]];
     return newArray;
+}
+
+/** [PURE HELPER] Takes in an array of Elements, then calculates the sum of the time spent in minutes. */
+export function calculateTotalTimeSpent(items: Element[]): number {
+    return items.reduce((total, element) => {
+        if (element.taskProgress !== undefined && element.taskUnit) {
+            // Convert everything to minutes for consistent calculation
+            const progressInMinutes = element.taskUnit === 'hr' 
+                ? element.taskProgress * 60 
+                : element.taskProgress;
+            return total + progressInMinutes;
+        }
+        return total;
+    }, 0);
+}
+
+/** [PURE HELPER] Formats minutes into hours and minutes. */
+export function formatTotalTime(totalMinutes: number): string {
+    if (totalMinutes === 0) return "0 min";
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours === 0) return `${minutes} min`;
+    if (minutes === 0) return `${hours} hr`;
+    return `${hours} hr ${minutes} min`;
 }
