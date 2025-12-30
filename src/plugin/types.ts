@@ -32,6 +32,9 @@ export interface Element {
 	startTime?: Time; // in ISO time
 	duration?: number; // duration value
 	durationUnit?: 'min' | 'hr'; // duration unit
+	taskProgress?: number; // time spent on task
+	taskLimit?: number; // total time allocated for task
+	taskUnit?: 'min' | 'hr'; // unit for task tracking
 }
 
 export interface ItemData {
@@ -47,6 +50,12 @@ export type ItemID = ActionItemID | CalendarID;
 export type ItemMeta = ActionItemMeta | CalendarMeta;
 export type ItemType = "action" | "calendar";
 
+export interface ItemInnerMeta {
+    timeCommitment: number; 
+    habits: string[];
+    journalHeader: string;
+}
+
 export interface ActionItemMeta {
     id: ActionItemID;
     type: "action";
@@ -54,6 +63,7 @@ export interface ActionItemMeta {
     label: string;
     color: string;
     floatCell: string;
+    innerMeta: ItemInnerMeta;
 }
 
 export interface CalendarMeta {
@@ -63,6 +73,7 @@ export interface CalendarMeta {
     label: string;
     color: string;
     floatCell: string;
+    innerMeta: ItemInnerMeta;
     url: string;
     etag?: string;
     lastFetched?: number;
@@ -70,8 +81,27 @@ export interface CalendarMeta {
     contentHash?: string;
 }
 
+export type TDate = ISODate;
+export type ItemDict = Record<ItemID, ItemMeta>;
+
 export interface PlannerState {
-    templates: Record<ISODate, Record<ItemID, ItemMeta>>;
+    templates: Record<TDate, ItemDict>;
+}
+
+/* Planner Table Rendering */
+export interface DateMapping {
+    date: ISODate;
+    tDate: TDate;
+}
+
+export interface Item {
+    id: ItemID;
+    meta: ItemMeta;
+}
+
+export interface BlockMeta {
+    rows: number;
+    dateTDateMapping: DateMapping[];
 }
 
 /* Data persistence */

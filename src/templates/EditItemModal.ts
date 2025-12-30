@@ -9,7 +9,8 @@ export class GenericEditModal extends Modal {
         let meta: ItemMeta = { ...initial };
 
         new Setting(contentEl)
-            .setName("Name: ")
+            .setName("Name")
+            .setDesc("The display name of the item (cannot be empty).")
             .addText((t) => t.setValue(meta.label).onChange((v) => (meta.label = v)));
         
         // Create error label (hidden by default)
@@ -22,13 +23,15 @@ export class GenericEditModal extends Modal {
 
         new Setting(contentEl)
             .setName("ID")
+            .setDesc("The ID of the item (randomly generated and unmodifiable).")
             .addText((t) => {
                 t.setDisabled(true);
                 t.setValue(meta.id);
             });
 
         new Setting(contentEl)
-            .setName("Color: ")
+            .setName("Color")
+            .setDesc("The accent color of the item.")
             .addColorPicker(c =>
                 c.setValue(meta.color)
                  .onChange((v) => meta.color = v)
@@ -36,9 +39,32 @@ export class GenericEditModal extends Modal {
 
         if (meta.type === "calendar") {
             new Setting(contentEl)
-                .setName("Remote Calendar URL: ")
+                .setName("Remote Calendar URL")
+                .setDesc("The link to the remote calendar (where events are fetched from).")
                 .addText((t) => t.setValue((meta as CalendarMeta).url ?? "").onChange((v) => ((meta as CalendarMeta).url = v)));
         }
+
+        new Setting(contentEl)
+            .setName("Time Commitment")
+            .setDesc("The planned daily commitment (in hours) per day. Set to 0 for none.")
+            .addSlider(s => {
+                s.setValue(0)
+                s.setLimits(0, 12, 1)
+                s.onChange(v => meta.innerMeta.timeCommitment = v)
+            })
+
+        const descFragment = document.createDocumentFragment();
+        descFragment.appendText("The header text which the plugin should search for journal information.");
+        descFragment.createEl("br");
+        descFragment.appendText("Include exact markdown syntax. Leave blank if unknown.");
+
+        new Setting(contentEl)
+            .setName("Journal Header")
+            .setDesc(descFragment)
+            .addText(t => {
+                t.setValue("")
+                t.onChange(v => meta.innerMeta.journalHeader = v)
+            })
 
         new Setting(contentEl)
             .addButton((b) => b.setButtonText("Save").setCta().onClick(() => {

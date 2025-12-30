@@ -12,6 +12,7 @@ import { parseICS, parseICSBetween, normalizeEvent, normalizeOccurrenceEvent, bu
 import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
 import { PlannerParser } from './planner/logic/parser';
+import { DailyNoteService } from './planner/logic/reader';
 
 export default class UltimatePlannerPlugin extends Plugin {
 	settings: PluginSettings;
@@ -24,6 +25,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 	public plannerActions: PlannerActions;
 	public calendarPipeline: CalendarPipeline;
 	public parserService: PlannerParser;
+	public dailyNoteService: DailyNoteService;
 
 
 	async onload() {
@@ -90,6 +92,12 @@ export default class UltimatePlannerPlugin extends Plugin {
 			data: this.dataService,
 			plannerActions: this.plannerActions,
 		})
+
+		this.dailyNoteService = new DailyNoteService(
+			this.app,
+			this.settings,
+			this.parserService
+		)
 
 		// Add Settings Tab using Obsidian's API
 		this.addSettingTab(new UltimatePlannerPluginTab(this.app, this));
