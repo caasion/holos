@@ -1,19 +1,17 @@
 <script lang="ts">
-	import type { Element, ItemData, ItemID, ISODate, ItemType } from "src/plugin/types";
+	import type { Element, ItemData, ItemID, ISODate, ItemType, ItemMeta } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
 
 	interface EditableCellProps {
 		date: ISODate;
 		showLabel: boolean;
-		itemLabel: string;
+		itemMeta: ItemMeta;
 		itemId: ItemID;
 		itemData: ItemData;
 		onUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
-		itemColor?: string;
-		itemType: ItemType;
 	}
 
-	let { date, showLabel, itemLabel, itemId, itemData, onUpdate, itemColor = "#666", itemType }: EditableCellProps = $props();
+	let { date, showLabel, itemMeta, itemData, onUpdate }: EditableCellProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editingIndex = $state<number | null>(null);
@@ -141,7 +139,7 @@
 			items: updatedItems
 		};
 
-		onUpdate(date, itemId, updatedData);
+		onUpdate(date, itemMeta.id, updatedData);
 		cancelEdit();
 	}
 
@@ -170,7 +168,7 @@
 				items: updatedItems
 			};
 
-			onUpdate(date, itemId, updatedData);
+			onUpdate(date, itemMeta.id, updatedData);
 		}
 	}
 
@@ -182,7 +180,7 @@
 			items: updatedItems
 		};
 
-		onUpdate(date, itemId, updatedData);
+		onUpdate(date, itemMeta.id, updatedData);
 	}
 
 	function addNewElement(isTask: boolean) {
@@ -198,7 +196,7 @@
 			items: [...itemData.items, newElement]
 		};
 
-		onUpdate(date, itemId, updatedData);
+		onUpdate(date, itemMeta.id, updatedData);
 		
 		// Start editing the new element
 		setTimeout(() => {
@@ -209,7 +207,7 @@
 
 <div class="editable-cell">
 	{#if showLabel}
-		<div class="row-label" style={`background-color: ${itemColor}80; color: white;`}>{itemType == "calendar" ? "📅" : ""} {itemLabel}</div>
+		<div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>{itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}</div>
 	{/if}
 	{#each itemData.items as element, index}
 		<div class="element-row">
@@ -249,16 +247,16 @@
 						/>
 					{/if}
 					{#if element.startTime && element.duration && element.durationUnit}
-						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 							({element.duration} {element.durationUnit})
 						</span>
 					{:else if element.startTime}
-						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
 							{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
 						</span>
 					{:else if element.duration && element.durationUnit}
-						<span class="time-badge" style={`background-color: ${itemColor}80;`}>
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
 							{element.duration} {element.durationUnit}
 						</span>
 					{/if}

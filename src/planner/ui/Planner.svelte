@@ -152,12 +152,10 @@
 					<EditableCell 
 						date={date}
 						showLabel={(col == 0 && meta.label !== "") || tDate == date}
-						itemLabel={meta.label}
+						itemMeta={meta}
 						itemId={id}
-						itemData={parsedContent[date][sortedTemplateDates[tDate][row].id]}
+						itemData={parsedContent[date][id]}
 						onUpdate={handleCellUpdate}
-						itemColor={meta.color}
-						itemType = {meta.type}
 					/>
 				{:else}
 					<div class="empty-cell">
