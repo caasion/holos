@@ -13,6 +13,7 @@
 	import DebugBlock from "src/playground/DebugBlock.svelte";
 	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
 	import Navbar from "./Navbar.svelte";
+	import HeaderCell from "./HeaderCell.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -130,53 +131,55 @@
 />  
 
 <div class="main-grid-container">
-    {#each blocksMeta as {rows, dateTDateMapping}, block (dateTDateMapping)}
-        <div class="block-container">
-            <div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-                {#each dateTDateMapping as {date}, col (date)}
-                    <HeaderCell {date} {openDailyNote} />
-                {/each}
-            </div>
+{#each blocksMeta as {rows, dateTDateMapping} (dateTDateMapping)}
+	<div class="block-container">
+		<!-- Header Row -->
+		<div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
+			{#each dateTDateMapping as {date} (date)}
+				<HeaderCell {date} {openDailyNote} />
+			{/each}
+		</div>
 
-            <div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-                {#each {length: rows} as _, row (row)}
-                    {#each dateTDateMapping as {date, tDate: tDate}, col (col)}
-					{#if tDate === ""}
-						<div class="cell">-</div>
-					{:else if row < Object.keys(sortedTemplateDates[tDate]).length}
-                        <div class="cell" style={`background-color: ${sortedTemplateDates[tDate][row].meta.color}10;`}>
-						{#if (parsedContent[date] && parsedContent[date][sortedTemplateDates[tDate][row].id])}
-							<EditableCell 
-								date={date}
-								showLabel={(col == 0 && sortedTemplateDates[tDate][row].meta.label !== "") || tDate == date}
-								itemLabel={sortedTemplateDates[tDate][row].meta.label}
-								itemId={sortedTemplateDates[tDate][row].id}
-								itemData={parsedContent[date][sortedTemplateDates[tDate][row].id]}
-								onUpdate={handleCellUpdate}
-								itemColor={sortedTemplateDates[tDate][row].meta.color}
-								itemType = {sortedTemplateDates[tDate][row].meta.type}
-								/>
-							{:else}
-								<div class="empty-cell">
-									<button 
-										class="add-new-btn" 
-										style={`border-color: ${sortedTemplateDates[tDate][row].meta.color}; color: ${sortedTemplateDates[tDate][row].meta.color};`}
-										onclick={() => addNewItemToCell(date, sortedTemplateDates[tDate][row].id, sortedTemplateDates[tDate][row].meta)}
-										title="Add new item"
-									>
-										+ Add
-									</button>
-								</div>
-							{/if}
-						</div>
-					{:else}
-						<div class="cell">-</div>
-					{/if}
-                    {/each}
-                {/each}
-            </div>
-        </div>
-    {/each}
+		<!-- Data Grid -->
+		<div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
+		{#each {length: rows} as _, row (row)}
+			{#each dateTDateMapping as {date, tDate: tDate}, col (col)}
+			{@const {id, meta} = sortedTemplateDates[tDate][row]}
+
+			{#if row < Object.keys(sortedTemplateDates[tDate]).length && tDate != ""}
+				<div class="cell" style={`background-color: ${meta.color}10;`}>
+				{#if (parsedContent[date] && parsedContent[date][id])}
+					<EditableCell 
+						date={date}
+						showLabel={(col == 0 && meta.label !== "") || tDate == date}
+						itemLabel={meta.label}
+						itemId={id}
+						itemData={parsedContent[date][sortedTemplateDates[tDate][row].id]}
+						onUpdate={handleCellUpdate}
+						itemColor={meta.color}
+						itemType = {meta.type}
+					/>
+				{:else}
+					<div class="empty-cell">
+						<button 
+							class="add-new-btn" 
+							style={`border-color: ${meta.color}; color: ${meta.color};`}
+							onclick={() => addNewItemToCell(date, id, meta)}
+							title="Add new item"
+						>
+							+ Add
+						</button>
+					</div>
+				{/if}
+				</div>
+			{:else}
+				<div class="cell">-</div>
+			{/if}
+			{/each}
+		{/each}
+		</div>
+	</div>
+{/each}
 </div>
 {:else}
 <TemplateEditor {app} {plannerActions} {helper} />
