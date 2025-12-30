@@ -133,18 +133,8 @@
     {#each blocksMeta as {rows, dateTDateMapping}, block (dateTDateMapping)}
         <div class="block-container">
             <div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-                {#each dates as {date}, col (date)}
-                    <div class="header-cell">
-                        <button 
-                            class="date-card" 
-                            class:today={isToday(date)}
-                            onclick={() => openDailyNote(date)}
-                            title="Click to open daily note"
-                        >
-                            <div class="dow-label">{format(parseISO(date), "E")}</div>
-                            <div class="date-label">{format(parseISO(date), "dd")}</div>
-                        </button>
-                    </div>
+                {#each dateTDateMapping as {date}, col (date)}
+                    <HeaderCell {date} {openDailyNote} />
                 {/each}
             </div>
 
