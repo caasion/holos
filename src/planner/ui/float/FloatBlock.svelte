@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getISODate } from "src/plugin/helpers";
     import { setFloatCell, getFloatCell } from "src/planner/plannerStore";
-    import InputCell from "./InputCell.svelte";
+    import InputCell from "src/planner/ui/float/InputCell.svelte";
     import type { ItemID, ISODate, ItemMeta } from "src/plugin/types";
     import { format } from "path";
 

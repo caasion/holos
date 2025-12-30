@@ -6,16 +6,16 @@
 	import type { BlockMeta, DataService, DateMapping, HelperService, ISODate, Item, ItemData, ItemDict, ItemID, ItemMeta, PluginSettings, TDate } from "src/plugin/types";
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { DailyNoteService } from "src/planner/logic/reader";
-	import FloatBlock from "src/planner/ui/FloatBlock.svelte";
+	import FloatBlock from "src/planner/ui/float/FloatBlock.svelte";
 	import TemplateEditor from "src/templates/TemplateEditor.svelte";
-	import EditableCell from "./EditableCell.svelte";
+	import EditableCell from "./grid/EditableCell.svelte";
 	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
 	import DebugBlock from "src/playground/DebugBlock.svelte";
 	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
 	import Navbar from "./Navbar.svelte";
-	import HeaderCell from "./HeaderCell.svelte";
-	import EmptyCell from "./EmptyCell.svelte";
-	import PlannerGrid from "./PlannerGrid.svelte";
+	import HeaderCell from "./grid/HeaderCell.svelte";
+	import EmptyCell from "./grid/EmptyCell.svelte";
+	import PlannerGrid from "./grid/PlannerGrid.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
