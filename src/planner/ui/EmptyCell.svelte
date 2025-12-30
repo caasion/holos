@@ -1,18 +1,18 @@
 <script lang="ts">
     interface ViewProps {
-        onClick: () => void;
+        onAdd: () => void;
         label: string;
         color: string;
     }
 
-    let {onClick, label, color}: ViewProps = $props();
+    let {onAdd, label, color}: ViewProps = $props();
 </script>
 
 <div class="empty-cell">
     <button 
         class="add-new-btn" 
         style={`border-color: ${color}; color: ${color};`}
-        onclick={onClick}
+        onclick={onAdd}
         title="Add new item"
     >
         {label}

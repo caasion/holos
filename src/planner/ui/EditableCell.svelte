@@ -206,9 +206,6 @@
 </script>
 
 <div class="editable-cell">
-	{#if showLabel}
-		<div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>{itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}</div>
-	{/if}
 	{#each itemData.items as element, index}
 		<div class="element-row">
 			{#if isEditing && editingIndex === index}
@@ -383,14 +380,5 @@
 		background-color: var(--background-modifier-hover);
 		border-color: var(--interactive-accent);
 		color: var(--text-normal);
-	}
-
-	.row-label {
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-weight: 600;
-		margin-bottom: 4px;
-		font-size: 0.9em;
-		width: fit-content;
 	}
 </style>
