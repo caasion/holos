@@ -15,6 +15,7 @@
 	import Navbar from "./Navbar.svelte";
 	import HeaderCell from "./HeaderCell.svelte";
 	import EmptyCell from "./EmptyCell.svelte";
+	import PlannerGrid from "./PlannerGrid.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -85,12 +86,6 @@
 		await dailyNoteService.addNewItemToCell(date, itemId, itemMeta.innerMeta.timeCommitment);
 	}
 
-	// TODO: Each block should have their own "rowsToRender"
-
-	function focusCell() {
-		// TODO: Re-implement row and column navigation.
-	}
-
 	// Currently doesn't work
 	function goTo(newDate: ISODate) {
 		/* Maintain focus when switching weeks */
@@ -101,11 +96,10 @@
 	async function openDailyNote(date: ISODate) {
 		await dailyNoteService.openDailyNote(date);
 	}
-
 	
 </script>
 
-<h1>The Ultimate Planner</h1>
+<h1>Holos</h1>
 
 <DebugBlock label={"Dates:"} object={dates} />
 <DebugBlock label={"Columns Meta:"} object={dateMappings} />
@@ -123,7 +117,11 @@
 	toggleView={() => inTemplateEditor = !inTemplateEditor}
 />
 
-{#if !inTemplateEditor}
+{#if inTemplateEditor}
+
+<TemplateEditor {app} {plannerActions} {helper} />
+
+{:else}
 
 <FloatBlock 
 	templates={sortedTemplateDates} 
@@ -131,90 +129,14 @@
 	focusCell={(opt: boolean) => { return false }}
 />  
 
-<div class="main-grid-container">
-{#each blocksMeta as {rows, dateTDateMapping} (dateTDateMapping)}
-	<div class="block-container">
-		<!-- Header Row -->
-		<div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-			{#each dateTDateMapping as {date} (date)}
-				<HeaderCell {date} {openDailyNote} />
-			{/each}
-		</div>
+<PlannerGrid 
+	{sortedTemplateDates}
+	{blocksMeta}
+	{columns}
+	{parsedContent}
+	{handleCellUpdate}
+	{addNewItemToCell}
+	{openDailyNote}
+/>
 
-		<!-- Data Grid -->
-		<div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-		{#each {length: rows} as _, row (row)}
-			{#each dateTDateMapping as {date, tDate: tDate}, col (col)}
-			{@const {id, meta} = sortedTemplateDates[tDate][row]}
-
-			{#if row < Object.keys(sortedTemplateDates[tDate]).length && tDate != ""}
-				<div class="cell" style={`background-color: ${meta.color}10;`}>
-				{#if (parsedContent[date] && parsedContent[date][id])}
-					<EditableCell 
-						date={date}
-						showLabel={(col == 0 && meta.label !== "") || tDate == date}
-						itemMeta={meta}
-						itemId={id}
-						itemData={parsedContent[date][id]}
-						onUpdate={handleCellUpdate}
-					/>
-				{:else}
-					<EmptyCell onClick={() => addNewItemToCell(date, id, meta)} label="+ Add" color={meta.color} />
-				{/if}
-				</div>
-			{:else}
-				<div class="cell">-</div>
-			{/if}
-			{/each}
-		{/each}
-		</div>
-	</div>
-{/each}
-</div>
-{:else}
-<TemplateEditor {app} {plannerActions} {helper} />
 {/if}
-
-<style>
-	/* Grid Layout */
-	.main-grid-container {
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-	}
-
-	.block-container {
-		border: 1px solid #ccc; 
-	}
-
-	.header-row {
-		display: grid;
-		/* grid-template-columns is set dynamically in the Svelte component */
-		border-bottom: 2px solid #ccc;
-		padding: 8px 0;
-		background-color: var(--background-primary);
-	}
-
-	.header-cell {
-		padding: 4px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.data-grid {
-		display: grid;
-		/* grid-template-columns is set dynamically in the Svelte component */
-			grid-auto-rows: minmax(40px, auto); 
-	}
-
-	.cell {
-		padding: 4px;
-		border-right: 1px dotted #ccc;
-		border-bottom: 1px dashed #ccc;
-		border-collapse: collapse;
-		min-height: 40px; 
-	}
-
-	
-</style>
