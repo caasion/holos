@@ -14,6 +14,7 @@
 	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
 	import Navbar from "./Navbar.svelte";
 	import HeaderCell from "./HeaderCell.svelte";
+	import EmptyCell from "./EmptyCell.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -158,16 +159,7 @@
 						onUpdate={handleCellUpdate}
 					/>
 				{:else}
-					<div class="empty-cell">
-						<button 
-							class="add-new-btn" 
-							style={`border-color: ${meta.color}; color: ${meta.color};`}
-							onclick={() => addNewItemToCell(date, id, meta)}
-							title="Add new item"
-						>
-							+ Add
-						</button>
-					</div>
+					<EmptyCell onClick={() => addNewItemToCell(date, id, meta)} label="+ Add" color={meta.color} />
 				{/if}
 				</div>
 			{:else}
@@ -224,27 +216,5 @@
 		min-height: 40px; 
 	}
 
-	.empty-cell {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding: 12px 8px;
-		height: 100%;
-	}
-
-	.add-new-btn {
-		padding: 4px 12px;
-		background: transparent;
-		border: 1px dashed;
-		cursor: pointer;
-		border-radius: 4px;
-		font-size: 0.85em;
-		transition: all 0.2s;
-	}
-
-	.add-new-btn:hover {
-		opacity: 0.8;
-	}
+	
 </style>
