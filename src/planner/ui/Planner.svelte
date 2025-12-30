@@ -15,6 +15,7 @@
 	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
 	import DebugBlock from "src/playground/DebugBlock.svelte";
 	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
+	import Navbar from "./Navbar.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -30,13 +31,16 @@
 
 	let { app, settings, data, helper, plannerActions, calendarPipeline, parser }: ViewProps = $props();
 
-	let showTemplateEditor = $state<boolean>(false);
+	
 	
 	// Track if we're currently writing to prevent re-reading our own changes
 	let isWriting = $state<boolean>(false);
 	
 	// Debounce timer for writes
 	let writeTimer: NodeJS.Timeout | null = null;
+
+	/* === View Rendering === */
+	let inTemplateEditor = $state<boolean>(false);
 
 	/* === Table Rendering === */
 	// Simplify settings
@@ -288,30 +292,25 @@
 <h1>The Ultimate Planner</h1>
 
 <DebugBlock label={"Dates:"} object={dates} />
-<DebugBlock label={"Columns Meta:"} object={columnsMeta} />
-<DebugBlock label={"Sorted Templates:"} object={sortedTemplates} />
+<DebugBlock label={"Columns Meta:"} object={dateMappings} />
+<DebugBlock label={"Sorted Templates:"} object={sortedTemplateDates} />
 <DebugBlock label={"Blocks Meta:"} object={blocksMeta} />
 
+<Navbar
+	{goTo}
+	incrementAmount={columns}
 
-<div class="header">
-	<div class="nav-buttons">
-		<button onclick={() => goTo(helper.getISODate(new Date()))}>Today</button>
-    	<button onclick={() => goTo(helper.addDaysISO(anchor, -settings.columns))}>&lt;</button>
-		<button onclick={() => goTo(helper.addDaysISO(anchor, settings.columns))}>&gt;</button>
-	</div>
-	<div class="week">
-		<span class="week-label">{helper.getLabelFromDateRange(parseISO(columnsMeta[0].date), parseISO(columnsMeta[columnsMeta.length - 1].date))}</span>
-		<input type="date" bind:value={anchor} />
-	</div>
-	<div class="new-ai">
-		<button onclick={(evt) => showTemplateEditor = !showTemplateEditor}>{showTemplateEditor ? "Planner View" : "Templates Editor"}</button>
-	</div>
-</div>
+	label={getLabelFromDateRange(dates[0], dates[dates.length - 1])}
+	{anchor}
 
-{#if !showTemplateEditor}
+	view={"Planner"}
+	toggleView={() => inTemplateEditor = !inTemplateEditor}
+/>
+
+{#if !inTemplateEditor}
 
 <FloatBlock 
-	templates={sortedTemplates} 
+	templates={sortedTemplateDates} 
 	contextMenu={(e: MouseEvent, tDate: ISODate, id: ItemID, meta: ItemMeta) => plannerActions.openItemMenu(app, e, tDate, id, meta)} 
 	focusCell={(opt: boolean) => { return false }}
 />  
@@ -380,55 +379,6 @@
 {/if}
 
 <style>
-	/* Navigation Menu */
-	.header {
-		display: grid;
-    	grid-template-columns: 1fr 1fr 1fr;
-	}
-
-	.week {
-		display: flex;
-		justify-content: center; 
-		position: relative;
-	}
-
-	.week-label {
-		font-weight: 600;
-		font-size: x-large;
-		text-align: center;
-		padding: .25rem .5rem;
-		display: inline-block;
-		pointer-events: none;  
-	}
-
-	.week input[type="date"] {
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-
-		width: 100%;
-		height: 100%;
-		z-index: 1;
-
-		opacity: 0;
-		cursor: pointer;
-	}
-
-	.week input[type="date"]::-webkit-calendar-picker-indicator {
-		width: 100%;
-		cursor: pointer;
-	}
-
-	.week input[type="date"]::-webkit-datetime-edit {
-		display: none;
-	}
-
-	.new-ai {
-		display: flex;
-		justify-content: flex-end;
-	}
-
 	/* Table Header */
 	.header-cell {
 		padding: 8px;
