@@ -13,16 +13,16 @@ export function getSortedTemplates(dateMappings: DateMapping[], data: DataServic
 
     const allTemplateDates = new Set(dateMappings.map(d => d.tDate));
 
-    allTemplateDates.forEach(date => {
-        if (date != "") return;
+    allTemplateDates.forEach(tDate => {
+        if (tDate == "") return;
         
-        const template = data.getTemplate(date); 
+        const template = data.getTemplate(tDate); 
     
         const itemsArray: Item[] = Object.entries(template)
             .map(([id, meta]) => ({id,meta}))
             .sort((a, b) => a.meta.order - b.meta.order);
 
-        obj[date] = itemsArray;	
+        obj[tDate] = itemsArray;	
     });
 
     return obj;
