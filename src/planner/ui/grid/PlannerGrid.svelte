@@ -32,10 +32,10 @@
         <div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
         {#each {length: rows} as _, row (row)}
             {#each dateTDateMapping as {date, tDate: tDate}, col (col)}
-            {@const {id: itemId, meta: itemMeta} = sortedTemplateDates[tDate][row]}
+            {@const {id: itemId, meta: itemMeta} = sortedTemplateDates[tDate]?.[row] ?? {}}
             {@const itemData = (parsedContent[date] && parsedContent[date][itemId]) ?? undefined}
 
-            {#if row < Object.keys(sortedTemplateDates[tDate]).length && tDate != ""}
+            {#if row < (sortedTemplateDates[tDate]?.length ?? 0) && tDate != ""}
             <WrapperCell 
                 {date}
                 showLabel={(col == 0 && itemMeta.label !== "") || tDate == date}
