@@ -101,3 +101,39 @@ export function formatTotalTime(totalMinutes: number): string {
     if (minutes === 0) return `${hours} hr`;
     return `${hours} hr ${minutes} min`;
 }
+
+type TimeUnit = 'min' | 'hr';
+
+/** [PURE HELPER] Takes in two time amounts of minutes (divident and divsor).
+ * Returns the appropriate amounts and units for each quantity, with the divisor taking priority.
+ */
+export function formatTimeArguments(dividend: number, divisor: number): { dividend: number; divisor: number; unit: TimeUnit } {
+    if (divisor != 0) { // If the divisor exists
+        const divisorUnit: TimeUnit = getTimeUnit(divisor);
+
+        if (divisorUnit == 'min') {
+            return { dividend, divisor, unit: divisorUnit };
+        } else { // divisorUnit == 'hr'
+            const dividendInHours = round(dividend / 60);
+            const divisorInHours = round(divisor / 60);
+            
+            return { dividend: dividendInHours, divisor: divisorInHours, unit: divisorUnit };
+        }
+    } else {
+        const dividendUnit: TimeUnit = getTimeUnit(dividend);
+        const dividendResult = dividendUnit == 'min' ? dividend : round(dividend / 60);
+
+        return { dividend: dividendResult, divisor: 0, unit: dividendUnit };
+    }
+}
+
+function round(number: number, decimalPlaces: number = 2) {
+    return Math.round((number + Number.EPSILON) * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+}
+
+/** [PURE HELPER] Takes an amount of minutes and returns the appropriate unit
+ * 'hr' if divisble by 60. Otherwise, 'min'.
+ */
+export function getTimeUnit(totalMinutes: number): TimeUnit {
+    return totalMinutes % 60 == 0 ? 'hr' : 'min';
+}

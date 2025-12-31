@@ -2,7 +2,8 @@
 	import type { ISODate, ItemData, ItemID, ItemMeta } from 'src/plugin/types';
     import EditableCell from './EditableCell.svelte';
     import EmptyCell from './EmptyCell.svelte';
-    import { calculateTotalTimeSpent, formatTotalTime } from 'src/plugin/helpers';
+    import { calculateTotalTimeSpent, formatTimeArguments } from 'src/plugin/helpers';
+	import CircularProgress from './CircularProgress.svelte';
     
     interface Props {
         date: ISODate;
@@ -17,15 +18,28 @@
     let {date, showLabel, itemMeta, itemId, itemData, onUpdate, onAdd}: Props = $props();
     
     const totalTimeSpent = $derived(itemData ? calculateTotalTimeSpent(itemData.items) : 0);
-    const totalTimeFormatted = $derived(formatTotalTime(totalTimeSpent));
+
+    const totalTimeCommitment = $derived(itemData ? itemData.time : 0);
 </script>
 
 <div class="cell" style={`background-color: ${itemMeta.color}10;`}>
 {#if showLabel}
+    {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
     <div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>
         {itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}
-        {#if totalTimeSpent > 0}
-            <span class="time-total">({totalTimeFormatted})</span>
+        {#if progress > 0 && limit > 0}
+            <CircularProgress
+                {progress}
+                {limit}
+                {unit}
+                size={20}
+            />
+        {:else if progress > 0}
+            <CircularProgress
+                {progress}
+                {unit}
+                size={20}
+            />
         {/if}
     </div>
 {/if}
