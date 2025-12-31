@@ -235,7 +235,8 @@
 						/>
 					{/if}
 					<span class:checked={element.checked}>{element.text}</span>
-					{#if element.taskProgress !== undefined && element.taskUnit}
+					<div class="element-info">
+						{#if element.taskProgress !== undefined && element.taskUnit}
 						<CircularProgress 
 							progress={element.taskProgress} 
 							limit={element.taskLimit} 
@@ -257,7 +258,7 @@
 							{element.duration} {element.durationUnit}
 						</span>
 					{/if}
-                    
+					</div>
 				</div>
 				<button class="delete-btn" onclick={() => deleteElement(index)} title="Delete">×</button>
 			{/if}
@@ -299,6 +300,7 @@
 		padding: 2px 4px;
 		border-radius: 2px;
 		display: flex;
+		justify-content: space-between;
 		align-items: center;
         min-height: 24px;
 		gap: 4px;
@@ -323,7 +325,11 @@
 		color: white;
 		padding: 2px 6px;
 		border-radius: 3px;
-		margin-left: auto;
+	}
+
+	.element-info {
+		display: flex;
+		gap: 4px;
 	}
 
 	.element-input {
