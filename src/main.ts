@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
-import { UltimatePlannerPluginTab } from './plugin/SettingsTab';
+import { HolosSettingsTab } from './plugin/SettingsTab';
 import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './planner/plannerStore';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
@@ -14,7 +14,7 @@ import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundVie
 import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/reader';
 
-export default class UltimatePlannerPlugin extends Plugin {
+export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
 	private saveTimer: number | null = null;
 	private storeSubscriptions: Unsubscriber[] = [];
@@ -100,7 +100,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 		)
 
 		// Add Settings Tab using Obsidian's API
-		this.addSettingTab(new UltimatePlannerPluginTab(this.app, this));
+		this.addSettingTab(new HolosSettingsTab(this.app, this));
 
 		// Register UPV using Obsidian's API
 		this.registerView(PLANNER_VIEW_TYPE, (leaf) => new PlannerView(leaf, this));
@@ -109,7 +109,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 		// Add a command to open UPV
 		this.addCommand({
 			id: 'open-planner-view',
-			name: 'Open Ultimate Planner',
+			name: 'Open Holos Planner',
 			callback: () => {
 				this.activateView(PLANNER_VIEW_TYPE);
 			}
@@ -186,7 +186,7 @@ export default class UltimatePlannerPlugin extends Plugin {
 			try {
 				await this.saveData(this.snapshot()); 
 			} catch (e) {
-				console.error("[UP] save FAILED", e);
+				console.error("[Holos] save FAILED", e);
 			}
 		}, 400);
 	}

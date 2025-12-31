@@ -1,15 +1,14 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
-import UltimatePlannerView from './ui/Planner.svelte';
-import UltimatePlannerPlugin from '../main';
-import TemplateEditor from "../templates/TemplateEditor.svelte";
+import PlannerComponent from './ui/Planner.svelte';
+import HolosPlugin from '../main';
 
-export const PLANNER_VIEW_TYPE = "ultimate-planner-view"
+export const PLANNER_VIEW_TYPE = "holos-view"
 
 export class PlannerView extends ItemView {
-    plugin: UltimatePlannerPlugin;
+    plugin: HolosPlugin;
 
-    constructor(leaf: WorkspaceLeaf, plugin: UltimatePlannerPlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: HolosPlugin) {
         super(leaf);
         this.plugin = plugin;
     }
@@ -19,14 +18,14 @@ export class PlannerView extends ItemView {
     }
 
     getDisplayText(): string {
-        return "Ultimate Planner View"
+        return "Holos View"
     }
 
     async onOpen() {
         const container = this.contentEl;
 		container.empty();
         
-        mount(UltimatePlannerView, {target: container, props: {
+        mount(PlannerComponent, {target: container, props: {
             app: this.plugin.app,
             settings: this.plugin.settings,
             data: this.plugin.dataService,

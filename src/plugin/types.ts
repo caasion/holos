@@ -137,7 +137,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weekStartOn: 0,
 
     autosaveDebounceMs: 200,
-    sectionHeading: "Ultimate Planner",
+    sectionHeading: "Holos",
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,

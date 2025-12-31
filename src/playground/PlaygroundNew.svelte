@@ -344,7 +344,7 @@
 	}
 </script>
 
-<h1>The Ultimate Planner</h1>
+<h1>Holos</h1>
 
 <!-- <DebugBlock label={"Dates:"} object={dates} />
 <DebugBlock label={"Columns Meta:"} object={columnsMeta} />
