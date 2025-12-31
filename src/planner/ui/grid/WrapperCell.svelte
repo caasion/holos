@@ -23,26 +23,29 @@
 </script>
 
 <div class="cell" style={`background-color: ${itemMeta.color}10;`}>
-{#if showLabel}
-    {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
-    <div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>
-        {itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}
-        {#if progress > 0 && limit > 0}
+    <div class="cell-header">
+        {#if showLabel}
+            <div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>
+                {itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}
+            </div>
+        {/if}
+        
+        {#if true}
+        {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
+        <div class="progress-circle">
             <CircularProgress
                 {progress}
                 {limit}
                 {unit}
                 size={20}
             />
-        {:else if progress > 0}
-            <CircularProgress
-                {progress}
-                {unit}
-                size={20}
-            />
+        </div>
         {/if}
+        
+        
     </div>
-{/if}
+    
+    
 
 {#if itemData}
     <EditableCell {date} showLabel={false} {itemMeta} {itemId} {itemData} {onUpdate} />
@@ -68,4 +71,14 @@
 		border-collapse: collapse;
 		min-height: 40px; 
 	}
+
+    .cell-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        width: 100%;
+    }
+
+    .progress-circle {
+        grid-column:2
+    }
 </style>
