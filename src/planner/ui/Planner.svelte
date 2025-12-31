@@ -57,11 +57,10 @@
 	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
 
 	// Get parsed content from the service store
-	let parsedContent = $state<Record<ISODate, Record<ItemID, ItemData>>>({});
-	dailyNoteService.parsedContent.subscribe(value => {
-		parsedContent = value;
-	});
+	const parsedContentStore = dailyNoteService.parsedContent;
 
+	let parsedContent = $derived<Record<ISODate, Record<ItemID, ItemData>>>($parsedContentStore);
+	
 	// Load daily note content when dates change
 	$effect(() => {
 		dailyNoteService.loadMultipleDates(dates);
@@ -99,12 +98,7 @@
 	
 </script>
 
-<h1>Holos</h1>
-
-<DebugBlock label={"Dates:"} object={dates} />
-<DebugBlock label={"Columns Meta:"} object={dateMappings} />
-<DebugBlock label={"Sorted Templates:"} object={sortedTemplateDates} />
-<DebugBlock label={"Blocks Meta:"} object={blocksMeta} />
+<h1>Holos</h1> 
 
 <Navbar
 	{goTo}
