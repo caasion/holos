@@ -125,16 +125,16 @@ export default class UltimatePlannerPlugin extends Plugin {
 					this.activateView(PLAYGROUND_VIEW_TYPE);
 				}
 			});
-		}
 
-		// Add debug command
-		this.addCommand({
-			id: 'debug-log-snaposhot',
-			name: 'Debug: Log snapshot',
-			callback: () => {
-				console.log(this.snapshot())
-			}
-		});
+			// Add debug command
+			this.addCommand({
+				id: 'debug-log-snaposhot',
+				name: 'Debug: Log snapshot',
+				callback: () => {
+					console.log(this.snapshot())
+				}
+			});
+		}
 	} 
 
 	async onunload() {
