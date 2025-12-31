@@ -73,7 +73,7 @@ export class NewItemModal extends Modal {
             .addSlider(s => {
                 s.setValue(0)
                 s.setLimits(0, 12, 1)
-                s.onChange(v => meta.innerMeta.timeCommitment = v)
+                s.onChange(v => meta.innerMeta.timeCommitment = v * 60)
             })
 
         const descFragment = document.createDocumentFragment();
