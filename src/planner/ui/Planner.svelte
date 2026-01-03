@@ -16,6 +16,7 @@
 	import HeaderCell from "./grid/HeaderCell.svelte";
 	import EmptyCell from "./grid/EmptyCell.svelte";
 	import PlannerGrid from "./grid/PlannerGrid.svelte";
+	import { templates } from "../plannerStore";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -51,7 +52,7 @@
 	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, plannerActions));
 
 	// Convert a template into a sorted array of items
-	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, data));
+	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, $templates));
 	
 	// Calculate the number of rows needed and derive the dates involved in each block
 	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
@@ -107,7 +108,7 @@
 	label={getLabelFromDateRange(dates[0], dates[dates.length - 1])}
 	{anchor}
 
-	view={"Planner"}
+	view={inTemplateEditor ? "Planner" : "Templates Editor"}
 	toggleView={() => inTemplateEditor = !inTemplateEditor}
 />
 
