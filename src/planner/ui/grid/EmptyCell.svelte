@@ -27,7 +27,6 @@
 		justify-content: center;
 		gap: 8px;
 		padding: 12px 8px;
-		height: 100%;
 	}
 
 	.add-new-btn {
