@@ -30,7 +30,7 @@
             </div>
         {/if}
         
-        {#if true}
+        {#if itemData}
         {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
         <div class="progress-circle">
             <CircularProgress
@@ -41,11 +41,7 @@
             />
         </div>
         {/if}
-        
-        
     </div>
-    
-    
 
 {#if itemData}
     <EditableCell {date} showLabel={false} {itemMeta} {itemId} {itemData} {onUpdate} />
@@ -56,21 +52,23 @@
 
 <style>
     .row-label {
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-weight: 600;
-		margin-bottom: 4px;
-		font-size: 0.9em;
-		width: fit-content;
-	}
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 0.9em;
+        width: fit-content;
+    }
 
     .cell {
-		padding: 4px;
-		border-right: 1px dotted #ccc;
-		border-bottom: 1px dashed #ccc;
-		border-collapse: collapse;
-		min-height: 40px; 
-	}
+        display: flex;
+        flex-direction: column;
+        padding: 4px;
+        border-right: 1px dotted #ccc;
+        border-bottom: 1px dashed #ccc;
+        border-collapse: collapse;
+        min-height: 40px; 
+    }
 
     .cell-header {
         display: grid;
