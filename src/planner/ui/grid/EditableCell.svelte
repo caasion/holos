@@ -234,7 +234,7 @@
 							class="task-checkbox"
 						/>
 					{/if}
-					<span class:checked={element.checked}>{element.text}</span>
+					<span style="flex: 1" class:checked={element.checked}>{element.text}</span>
 					<div class="element-info">
 						{#if element.taskProgress !== undefined && element.taskUnit}
 						<CircularProgress 
@@ -300,7 +300,6 @@
 		padding: 2px 4px;
 		border-radius: 2px;
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
         min-height: 24px;
 		gap: 4px;
