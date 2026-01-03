@@ -14,13 +14,17 @@
 
     let selectedTemplate = $state<ISODate>(plannerActions.getTemplateDate(helper.getISODate(new Date()) ?? ""));
 
+    function handleNewTemplate() {
+        plannerActions.handleNewTemplate(app);
+    }
+
 </script>
 
 <div class="container">
     <div class="section">
         <div class="header">
             <h2>Templates</h2>
-            <button onclick={() => plannerActions.handleNewTemplate(app)}>+ New</button>
+            <button onclick={handleNewTemplate}>+ New</button>
         </div>
         <div class="templates-selector">
             {#each $sortedTemplateDates as tDate} 
