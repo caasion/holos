@@ -28,8 +28,7 @@ export interface Element {
 	text: string;
 	children: string[];
 	isTask: boolean;
-	checked?: boolean;
-    cancelled?: boolean;
+    taskStatus?: ' ' | 'x' | '-';
 	startTime?: Time; // in ISO time
     progress?: number;
     duration?: number;
