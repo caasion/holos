@@ -155,45 +155,27 @@ export class PlannerParser {
     }
 
     // Serialize an Element back to a string
-    public static serializeElement(element: Element): string {
-        let line = '\t';
+    public static serializeElement(element: Element | Omit<Element, 'raw'>): string {
+        let line = '\t- ';
+
+		// Construct the raw string from the element properties when it is changed
+
+		const { text, children, isTask, taskStatus, startTime, progress, duration, timeUnit } = element;
+
+		if (isTask) 
+			line += `[${taskStatus}] `
         
-        // Add task checkbox if needed
-        if (element.isTask) {
-            line += element.checked ? '- [x] ' : '- [ ] ';
-        } else {
-            line += '- ';
-        }
-        
-        // Add text
-        line += element.text;
-        
-        // Add task duration tracking if available
-        if (element.progress !== undefined && element.timeUnit) {
-            if (element.duration !== undefined) {
-                line += ` [${element.progress}/${element.duration} ${element.timeUnit}]`;
-            } else {
-                line += ` [${element.progress}/ ${element.timeUnit}]`;
-            }
-        }
-        
-        // Add time information if available
-        if (element.startTime && element.duration && element.timeUnit && element.progress === undefined) {
-            const hours = element.startTime.hours.toString().padStart(2, '0');
-            const minutes = element.startTime.minutes.toString().padStart(2, '0');
-            line += ` @ ${hours}:${minutes} [${element.duration} ${element.timeUnit}]`;
-        } else if (element.startTime) {
-            const hours = element.startTime.hours.toString().padStart(2, '0');
-            const minutes = element.startTime.minutes.toString().padStart(2, '0');
-            line += ` @ ${hours}:${minutes}`;
-        } else if (element.duration && element.timeUnit && element.progress === undefined) {
-            line += ` [${element.duration} ${element.timeUnit}]`;
-        }
-        
-        let result = line + '\n';
-        
-        // Add children
-        for (const child of element.children) {
+        line += text.trim();
+
+		if (startTime)
+			line += ' @ ' + formatTime(startTime);
+
+		if (duration && timeUnit) 
+			line += ' ' + formatProgressDuration(progress, duration, timeUnit);
+
+		let result = line + `\n`;
+
+		for (const child of children) {
             result += `\t\t- ${child}\n`;
         }
         
