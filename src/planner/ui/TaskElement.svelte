@@ -1,6 +1,8 @@
 <script lang="ts">
-	import type { Element, ItemMeta } from "src/plugin/types";
+	import type { Element, ItemMeta, Time } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
+	import { formatTime } from "src/plugin/helpers";
+	import { longpress } from "src/plugin/actions"
 
 	interface TaskElementProps {
 		element: Element;
@@ -9,119 +11,86 @@
 		onUpdate: (index: number, updatedElement: Element) => void;
 		onDelete: (index: number) => void;
 		onToggle: (index: number) => void;
+		onCancel: (index: number) => void;
 	}
 
-	let { element, index, itemMeta, onUpdate, onDelete, onToggle }: TaskElementProps = $props();
+	let { element, index, itemMeta, onUpdate, onDelete, onToggle, onCancel }: TaskElementProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
+	let skipBlur = $state<boolean>(false);
+	let checkboxRef = $state<HTMLInputElement>();
+
+	// Handle longpress event
+	$effect(() => {
+		if (checkboxRef) {
+			const handler = () => onCancel(index);
+			checkboxRef.addEventListener('longpress', handler);
+			return () => checkboxRef?.removeEventListener('longpress', handler);
+		}
+	});
 
 	function startEdit() {
 		isEditing = true;
-		
-		// Build the raw text including time info
-		editText = element.text;
-		
-		// Add task duration tracking if available
-		if (element.taskProgress !== undefined && element.taskUnit) {
-			if (element.taskLimit !== undefined) {
-				editText += ` [${element.taskProgress}/${element.taskLimit} ${element.taskUnit}]`;
-			} else {
-				editText += ` [${element.taskProgress}/ ${element.taskUnit}]`;
-			}
-		}
-		
-		if (element.startTime && element.duration && element.durationUnit) {
-			const hours = element.startTime.hours.toString().padStart(2, '0');
-			const minutes = element.startTime.minutes.toString().padStart(2, '0');
-			editText += ` @ ${hours}:${minutes} (${element.duration} ${element.durationUnit})`;
-		} else if (element.startTime) {
-			const hours = element.startTime.hours.toString().padStart(2, '0');
-			const minutes = element.startTime.minutes.toString().padStart(2, '0');
-			editText += ` @ ${hours}:${minutes}`;
-		} else if (element.duration && element.durationUnit) {
-			editText += ` (${element.duration} ${element.durationUnit})`;
-		}
+		editText = element.raw.replace(/^\t- /, '').trim();
 	}
 
 	function cancelEdit() {
 		isEditing = false;
 		editText = "";
+		skipBlur = false;
 	}
 
 	function saveEdit() {
-		if (editText.trim() === "") {
-			cancelEdit();
+		if (skipBlur) {
+			skipBlur = false;
 			return;
 		}
 
-		// Parse the text for task duration: [X/Y hr] or [X/Y min] or [X/ hr]
-		let textWithoutTaskDuration = editText;
-		let taskProgress: number | undefined;
-		let taskLimit: number | undefined;
-		let taskUnit: 'min' | 'hr' | undefined;
-		
-		const taskDurationMatch = textWithoutTaskDuration.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-		if (taskDurationMatch) {
-			const [fullMatch, progress, limit, unit] = taskDurationMatch;
-			taskProgress = parseInt(progress);
-			taskLimit = limit ? parseInt(limit) : undefined;
-			taskUnit = unit as 'min' | 'hr';
-			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-		} else {
-			// Handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
-			const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-			if (incompleteMatch) {
-				const [fullMatch, limit, unit] = incompleteMatch;
-				taskProgress = 0;
-				taskLimit = parseInt(limit);
-				taskUnit = unit as 'min' | 'hr';
-				textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-			}
+		let isTask = false;
+		let taskStatus: ' ' | 'x' | '-' | undefined;
+		let startTime: Time | undefined;
+		let progress: number | undefined;
+		let duration: number | undefined;
+		let timeUnit: 'min' | 'hr' | undefined;
+
+		const taskStatusRegex = /^\[([ x-])\]/;
+		const startTimeRegex = /@\s*(\d{1,2}):(\d{2})/;
+		const progressDurationRegex = /\[(?:(\d+)?(\/))?(\d+)\s*(hr|min)\]/;
+
+		const taskStatusMatch = editText.match(taskStatusRegex);
+		if (taskStatusMatch) {
+			const [fullMatch, checkmark] = taskStatusMatch;
+			editText = editText.replace(fullMatch, '').trim();
+			isTask = true;
+			taskStatus = checkmark as typeof taskStatus;
 		}
-		
-		// Parse the text for time info: "Task @ 10:00 (2 hr)", "Task @ 10:00", or "Task (2 hr)"
-		const withFullTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-		const withStartTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})/);
-		const withDurationMatch = textWithoutTaskDuration.match(/(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-		
-		const updatedElement: Element = { ...element };
-		
-		if (withFullTimeMatch) {
-			const [, text, hours, minutes, rawDuration, units] = withFullTimeMatch;
-			updatedElement.text = text.trim();
-			updatedElement.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-			updatedElement.duration = parseInt(rawDuration);
-			updatedElement.durationUnit = units.startsWith('h') ? 'hr' : 'min';
-		} else if (withStartTimeMatch) {
-			const [, text, hours, minutes] = withStartTimeMatch;
-			updatedElement.text = text.trim();
-			updatedElement.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-			delete updatedElement.duration;
-			delete updatedElement.durationUnit;
-		} else if (withDurationMatch) {
-			const [, text, rawDuration, units] = withDurationMatch;
-			updatedElement.text = text.trim();
-			delete updatedElement.startTime;
-			updatedElement.duration = parseInt(rawDuration);
-			updatedElement.durationUnit = units.startsWith('h') ? 'hr' : 'min';
-		} else {
-			// No time info
-			updatedElement.text = textWithoutTaskDuration.trim();
-			delete updatedElement.startTime;
-			delete updatedElement.duration;
-			delete updatedElement.durationUnit;
+
+		const startTimeMatch = editText.match(startTimeRegex);
+		if (startTimeMatch) {
+			const [fullMatch, hours, minutes] = startTimeMatch;
+			editText = editText.replace(fullMatch, '').trim();
+			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
 		}
-		
-		// Set task duration tracking
-		if (taskProgress !== undefined) {
-			updatedElement.taskProgress = taskProgress;
-			updatedElement.taskLimit = taskLimit;
-			updatedElement.taskUnit = taskUnit;
-		} else {
-			delete updatedElement.taskProgress;
-			delete updatedElement.taskLimit;
-			delete updatedElement.taskUnit;
+
+		const progressDurationMatch = editText.match(progressDurationRegex);
+		if (progressDurationMatch) {
+			const [fullMatch, progressMatch, hasProgress, durationMatch, unitMatch] = progressDurationMatch;
+			editText = editText.replace(fullMatch, '');
+			progress = hasProgress ? (parseInt(progressMatch) || 0) : undefined;
+			duration = parseInt(durationMatch);
+			timeUnit = unitMatch as 'min' | 'hr';
+		}
+
+		const updatedElement: Element = {
+			...element,
+			text: editText.trim(),
+			isTask,
+			taskStatus,
+			startTime,
+			progress,
+			duration,
+			timeUnit,
 		}
 		
 		onUpdate(index, updatedElement);
@@ -132,9 +101,11 @@
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			saveEdit();
+			skipBlur = true;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			cancelEdit();
+			skipBlur = true;
 		}
 	}
 
@@ -152,14 +123,6 @@
 <div class="task-element">
 	<div class="element-row">
 		{#if isEditing}
-			{#if element.isTask}
-				<input
-					type="checkbox"
-					checked={element.checked}
-					onchange={toggleTask}
-					class="task-checkbox"
-				/>
-			{/if}
 			<input
 				type="text"
 				bind:value={editText}
@@ -169,37 +132,43 @@
 			/>
 		{:else}
 			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
-				{#if element.isTask}
-					<input
-						type="checkbox"
-						checked={element.checked}
-						onchange={toggleTask}
-						class="task-checkbox"
-					/>
-				{/if}
-				<span class:checked={element.checked}>{element.text}</span>
-				{#if element.taskProgress !== undefined && element.taskUnit}
-					<CircularProgress 
-						progress={element.taskProgress} 
-						limit={element.taskLimit} 
-						unit={element.taskUnit}
-						size={20}
-					/>
-				{/if}
-				{#if element.startTime && element.duration && element.durationUnit}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-						({element.duration} {element.durationUnit})
-					</span>
-				{:else if element.startTime}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-					</span>
-				{:else if element.duration && element.durationUnit}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.duration} {element.durationUnit}
-					</span>
-				{/if}
+				<div class="element-checkbox-container">
+					{#if element.duration && element.timeUnit}
+						<CircularProgress 
+							progress={element.progress}
+							duration={element.duration} 
+							unit={element.timeUnit}
+							size={20}
+						/>
+					{:else if element.taskStatus}
+						<input
+							bind:this={checkboxRef}
+							type="checkbox"
+							checked={element.taskStatus == "x"}
+							onchange={toggleTask}
+							use:longpress={500}
+							class="task-checkbox"
+						/>
+					{/if}
+				</div>
+				<span 
+					class:checked={element.taskStatus == "x" || (!element.progress && element.duration) || (element.progress && element.duration && element.progress >= element.duration)} 
+					class:cancelled={element.taskStatus == "-"}	
+				>
+					{element.text}
+				</span>
+				<div class="time-badge-container">
+					{#if element.duration && element.timeUnit}
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+							{element.duration} {element.timeUnit}
+						</span>
+					{/if}
+					{#if element.startTime}
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+							{formatTime(element.startTime)}
+						</span>
+					{/if}
+				</div>
 			</div>
 			<button class="delete-btn" onclick={deleteElement} title="Delete">×</button>
 		{/if}
@@ -241,13 +210,37 @@
 		background-color: var(--background-modifier-hover);
 	}
 
+	.element-checkbox-container {
+		height: 20px;
+		width: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
 	.task-checkbox {
 		cursor: pointer;
+		margin: 0;
 	}
 
 	.checked {
 		text-decoration: line-through;
 		opacity: 0.6;
+	}
+
+	.cancelled {
+		text-decoration: line-through;
+		opacity: 0.6;
+	}
+
+	.time-badge-container {
+		margin-left: auto;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		justify-content: flex-end;
+		align-items: center;
 	}
 
 	.time-badge {
@@ -256,7 +249,6 @@
 		color: white;
 		padding: 2px 6px;
 		border-radius: 3px;
-		margin-left: auto;
 	}
 
 	.element-input {

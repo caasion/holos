@@ -28,13 +28,11 @@ export interface Element {
 	text: string;
 	children: string[];
 	isTask: boolean;
-	checked?: boolean;
+    taskStatus?: ' ' | 'x' | '-';
 	startTime?: Time; // in ISO time
-	duration?: number; // duration value
-	durationUnit?: 'min' | 'hr'; // duration unit
-	taskProgress?: number; // time spent on task
-	taskLimit?: number; // total time allocated for task
-	taskUnit?: 'min' | 'hr'; // unit for task tracking
+    progress?: number;
+    duration?: number;
+	timeUnit?: 'min' | 'hr';
 }
 
 export interface ItemData {

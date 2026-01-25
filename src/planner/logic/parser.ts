@@ -1,7 +1,8 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
 import type { PlannerActions } from "src/planner/logic/itemActions";
-import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo } from "src/plugin/types";
+import { formatProgressDuration, formatTime } from "src/plugin/helpers";
+import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
 
 export interface ParserDeps {
 	data: DataService;
@@ -48,16 +49,12 @@ export class PlannerParser {
 			
 			// If the line starts with a bullet point with no tab, then start a new item.
 			if (line.match(/^- /)) { 
-                // Push the old element if it exists
+				// Push the old element or item if it exists
 				if (currElement && currItem) currItem.items.push(currElement);
-
-				// Push the old item if it exists
 				if (currItem) itemData[currItem.id] = currItem;
 				
-				// Reset for new item
+				// Prepare for new item: reset & initialize
 				currElement = null;
-				
-				// Initialize the new item
 				let text = line.replace(/^- (\[.\] )?/, '').trim();
 				
 				// Parse time commitment from pattern: Action Item (2 hr|30 mins)
@@ -102,231 +99,79 @@ export class PlannerParser {
         return itemData;
     }
     
-    private static parseElementLine(line: string): Element {
-	    // Try to match with time information
-	    const withTimeMatch = line.match(/^\t(- \[(.?)\] |- )(.*?) @ (.*)/);
-	    
-	    if (withTimeMatch) {
-	        const [, id, checkmark, text, timeStr] = withTimeMatch;
-	        
-	        // Parse time: format like "10:00 (2 hr)" or "12:00 (30 min)" or just "10:00"
-	        const timeWithDurationMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-	        const timeOnlyMatch = timeStr.match(/(\d{1,2}):(\d{2})$/);
-	        
-	        // Extract task duration tracking from text: [X/Y hr] or [X/Y min]
-	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
-	        
-	        // Match [X/Y hr] or [X/Y min] or [X/ hr] or [X/ min]
-	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
-	            // Remove the duration tracking from text
-	            cleanText = cleanText.replace(fullMatch, '').trim();
-	        } else {
-	            // Also handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
-	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-	            if (incompleteMatch) {
-	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
-	                cleanText = cleanText.replace(fullMatch, '').trim();
-	            }
-	        }
-	        
-	        const element: Element = {
-	            raw: line,
-	            text: cleanText,
-	            children: [],
-	            isTask: id.includes('[ ]') || id.includes('[x]'),
-	            checked: id.includes('[x]'),
-	        };
-	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
-	        }
-	        
-	        if (timeWithDurationMatch) {
-	            const [, hours, minutes, rawDuration, units] = timeWithDurationMatch;
-	            element.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-	            element.duration = parseInt(rawDuration);
-	            element.durationUnit = units.startsWith('h') ? 'hr' : 'min';
-	        } else if (timeOnlyMatch) {
-	            const [, hours, minutes] = timeOnlyMatch;
-	            element.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-	        }
-	        
-	        return element;
-	    }
-	    
-	    // Try to match with start time only (no duration) - fallback if @ doesn't have time after it
-	    const startTimeOnlyMatch = line.match(/^\t(- \[(.?)\] |- )(.*?) @ (\d{1,2}):(\d{2})$/);
-	    
-	    if (startTimeOnlyMatch) {
-	        const [, id, checkmark, text, hours, minutes] = startTimeOnlyMatch;
-	        return {
-	            raw: line,
-	            text: text.trim(),
-	            children: [],
-	            isTask: id.includes('[ ]') || id.includes('[x]'),
-	            checked: id.includes('[x]'),
-	            startTime: { hours: parseInt(hours), minutes: parseInt(minutes) },
-	        };
-	    }
-	    
-	    // Try to match with duration only (no start time)
-	    const durationOnlyMatch = line.match(/^\t(- \[(.?)\] |- )(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-	    
-	    if (durationOnlyMatch) {
-	        const [, id, checkmark, text, rawDuration, units] = durationOnlyMatch;
-	        
-	        // Extract task duration tracking from text
-	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
-	        
-	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
-	            cleanText = cleanText.replace(fullMatch, '').trim();
-	        } else {
-	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-	            if (incompleteMatch) {
-	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
-	                cleanText = cleanText.replace(fullMatch, '').trim();
-	            }
-	        }
-	        
-	        const element: Element = {
-	            raw: line,
-	            text: cleanText,
-	            children: [],
-	            isTask: id.includes('[ ]') || id.includes('[x]'),
-	            checked: id.includes('[x]'),
-	            duration: parseInt(rawDuration),
-	            durationUnit: units.startsWith('h') ? 'hr' : 'min',
-	        };
-	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
-	        }
-	        
-	        return element;
-	    }
-	    
-	    // Handle without time information
-	    const noTimeMatch = line.match(/^\t(- \[(.?)\] |- )(.*)/);
-	    
-	    if (noTimeMatch) {
-	        const [, id, checkmark, text] = noTimeMatch;
-	        
-	        // Extract task duration tracking from text
-	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
-	        
-	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
-	            cleanText = cleanText.replace(fullMatch, '').trim();
-	        } else {
-	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-	            if (incompleteMatch) {
-	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
-	                cleanText = cleanText.replace(fullMatch, '').trim();
-	            }
-	        }
-	        
-	        const element: Element = {
-	            raw: line,
-	            text: cleanText,
-	            children: [],
-	            isTask: id.includes('[ ]') || id.includes('[x]'),
-	            checked: id.includes('[x]'),
-	        };
-	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
-	        }
-	        
-	        return element;
-	    }
-	    
-	    // Fallback for malformed lines
-	    return {
-	        raw: line,
-	        text: line.replace(/^\t- /, '').trim(),
-	        children: [],
-	        isTask: false,
-	    };
+    public static parseElementLine(line: string): Element {
+		let text = line.replace(/^\s+- /, '');
+
+	    let isTask = false;
+		let taskStatus: ' ' | 'x' | '-' | undefined;
+		let startTime: Time | undefined;
+		let progress: number | undefined;
+		let duration: number | undefined;
+		let timeUnit: 'min' | 'hr' | undefined;
+
+		const taskStatusRegex = /^\[([ x-])\]/;
+		const startTimeRegex = /@\s*(\d{1,2}):(\d{2})/;
+		const progressDurationRegex = /\[(?:(\d+)?(\/))?(\d+)\s*(hr|min)\]/;
+
+		const taskStatusMatch = text.match(taskStatusRegex);
+		if (taskStatusMatch) {
+			const [fullMatch, checkmark] = taskStatusMatch;
+			text = text.replace(fullMatch, '').trim();
+			isTask = true;
+			taskStatus = checkmark as typeof taskStatus;
+		}
+
+		const startTimeMatch = text.match(startTimeRegex);
+		if (startTimeMatch) {
+			const [fullMatch, hours, minutes] = startTimeMatch;
+			text = text.replace(fullMatch, '').trim();
+			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
+		}
+
+		const progressDurationMatch = text.match(progressDurationRegex);
+		if (progressDurationMatch) {
+			const [fullMatch, progressMatch, hasProgress, durationMatch, unitMatch] = progressDurationMatch;
+			text = text.replace(fullMatch, '');
+			progress = hasProgress ? (parseInt(progressMatch) || 0) : undefined;
+			duration = parseInt(durationMatch);
+			timeUnit = unitMatch as 'min' | 'hr';
+		}
+
+		return {
+			raw: line,
+			text,
+			children: [],
+			isTask,
+			taskStatus,
+			startTime, 
+			progress,
+			duration,
+			timeUnit,
+		};
     }
 
     // Serialize an Element back to a string
-    private static serializeElement(element: Element): string {
-        let line = '\t';
+    public static serializeElement(element: Element | Omit<Element, 'raw'>): string {
+        let line = '\t- ';
+
+		// Construct the raw string from the element properties when it is changed
+
+		const { text, children, isTask, taskStatus, startTime, progress, duration, timeUnit } = element;
+
+		if (isTask) 
+			line += `[${taskStatus}] `
         
-        // Add task checkbox if needed
-        if (element.isTask) {
-            line += element.checked ? '- [x] ' : '- [ ] ';
-        } else {
-            line += '- ';
-        }
-        
-        // Add text
-        line += element.text;
-        
-        // Add task duration tracking if available
-        if (element.taskProgress !== undefined && element.taskUnit) {
-            if (element.taskLimit !== undefined) {
-                line += ` [${element.taskProgress}/${element.taskLimit} ${element.taskUnit}]`;
-            } else {
-                line += ` [${element.taskProgress}/ ${element.taskUnit}]`;
-            }
-        }
-        
-        // Add time information if available
-        if (element.startTime && element.duration && element.durationUnit) {
-            const hours = element.startTime.hours.toString().padStart(2, '0');
-            const minutes = element.startTime.minutes.toString().padStart(2, '0');
-            line += ` @ ${hours}:${minutes} (${element.duration} ${element.durationUnit})`;
-        } else if (element.startTime) {
-            const hours = element.startTime.hours.toString().padStart(2, '0');
-            const minutes = element.startTime.minutes.toString().padStart(2, '0');
-            line += ` @ ${hours}:${minutes}`;
-        } else if (element.duration && element.durationUnit) {
-            line += ` (${element.duration} ${element.durationUnit})`;
-        }
-        
-        let result = line + '\n';
-        
-        // Add children
-        for (const child of element.children) {
+        line += text.trim();
+
+		if (startTime)
+			line += ' @ ' + formatTime(startTime);
+
+		if (duration && timeUnit) 
+			line += ' ' + formatProgressDuration(progress, duration, timeUnit);
+
+		let result = line + `\n`;
+
+		for (const child of children) {
             result += `\t\t- ${child}\n`;
         }
         
