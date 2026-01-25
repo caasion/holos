@@ -132,23 +132,25 @@
 			/>
 		{:else}
 			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
-				{#if element.duration && element.timeUnit}
-				<CircularProgress 
-					progress={element.progress}
-					duration={element.duration} 
-					unit={element.timeUnit}
-					size={20}
-				/>
-				{:else if element.taskStatus}
-					<input
-						bind:this={checkboxRef}
-						type="checkbox"
-						checked={element.taskStatus == "x"}
-						onchange={toggleTask}
-						use:longpress={1000}
-						class="task-checkbox"
-					/>
-				{/if}
+				<div class="element-checkbox-container">
+					{#if element.duration && element.timeUnit}
+						<CircularProgress 
+							progress={element.progress}
+							duration={element.duration} 
+							unit={element.timeUnit}
+							size={20}
+						/>
+					{:else if element.taskStatus}
+						<input
+							bind:this={checkboxRef}
+							type="checkbox"
+							checked={element.taskStatus == "x"}
+							onchange={toggleTask}
+							use:longpress={500}
+							class="task-checkbox"
+						/>
+					{/if}
+				</div>
 				<span 
 					class:checked={element.taskStatus == "x" || (!element.progress && element.duration) || (element.progress && element.duration && element.progress >= element.duration)} 
 					class:cancelled={element.taskStatus == "-"}	
@@ -208,8 +210,18 @@
 		background-color: var(--background-modifier-hover);
 	}
 
+	.element-checkbox-container {
+		height: 20px;
+		width: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
 	.task-checkbox {
 		cursor: pointer;
+		margin: 0;
 	}
 
 	.checked {
