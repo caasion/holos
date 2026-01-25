@@ -180,4 +180,8 @@
 		font-size: 0.9em;
 		width: fit-content;
 	}
+  
+  .elements-container {
+    min-height: 1em;
+  }
 </style>
