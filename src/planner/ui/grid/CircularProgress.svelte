@@ -10,6 +10,10 @@
 
 	// Calculate percentage (0-100+)
 	let percentage = $derived.by(() => {
+		if (progress === 0 && limit === undefined || limit === 0) {
+			// No limit with no progress: gray
+			return 0;
+		}
 		if (limit === undefined || limit === 0) {
 			// No limit: always blue
 			return -1; // Special value for no-limit case

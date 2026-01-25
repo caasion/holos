@@ -1,0 +1,82 @@
+<script lang="ts">
+	import type { ISODate, ItemData, ItemID, ItemMeta } from 'src/plugin/types';
+    import EditableCell from './EditableCell.svelte';
+    import EmptyCell from './EmptyCell.svelte';
+    import { calculateTotalTimeSpent, formatTimeArguments } from 'src/plugin/helpers';
+	import CircularProgress from './CircularProgress.svelte';
+    
+    interface Props {
+        date: ISODate;
+        showLabel: boolean;
+        itemMeta: ItemMeta;
+        itemId: ItemID;
+        itemData: ItemData | undefined;
+        onUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
+        onAdd: (date: ISODate, itemId: ItemID, itemMeta: ItemMeta) => void;
+    }
+    
+    let {date, showLabel, itemMeta, itemId, itemData, onUpdate, onAdd}: Props = $props();
+    
+    const totalTimeSpent = $derived(itemData ? calculateTotalTimeSpent(itemData.items) : 0);
+
+    const totalTimeCommitment = $derived(itemData ? itemData.time : 0);
+</script>
+
+<div class="cell" style={`background-color: ${itemMeta.color}10;`}>
+    <div class="cell-header">
+        {#if showLabel}
+            <div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>
+                {itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}
+            </div>
+        {/if}
+        
+        {#if itemData}
+        {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
+        <div class="progress-circle">
+            <CircularProgress
+                {progress}
+                {limit}
+                {unit}
+                size={20}
+            />
+        </div>
+        {/if}
+    </div>
+
+{#if itemData}
+    <EditableCell {date} showLabel={false} {itemMeta} {itemId} {itemData} {onUpdate} />
+{:else}
+    <EmptyCell onAdd={() => onAdd(date, itemId, itemMeta)} label="+ Add" color={itemMeta.color} />
+{/if}
+</div>
+
+<style>
+    .row-label {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 0.9em;
+        width: fit-content;
+    }
+
+    .cell {
+        display: flex;
+        flex-direction: column;
+        padding: 4px;
+        border-right: 1px dotted #ccc;
+        border-bottom: 1px dashed #ccc;
+        border-collapse: collapse;
+        min-height: 40px; 
+    }
+
+    .cell-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        width: 100%;
+    }
+
+    .progress-circle {
+        grid-column:2
+    }
+</style>
