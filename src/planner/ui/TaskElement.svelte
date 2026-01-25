@@ -18,30 +18,7 @@
 
 	function startEdit() {
 		isEditing = true;
-		
-		// Build the raw text including time info
-		editText = element.text;
-		
-		// Add task duration tracking if available
-		if (element.progress !== undefined && element.timeUnit) {
-			if (element.duration !== undefined) {
-				editText += ` [${element.progress}/${element.duration} ${element.timeUnit}]`;
-			} else {
-				editText += ` [${element.progress}/ ${element.timeUnit}]`;
-			}
-		}
-		
-		if (element.startTime && element.duration && element.timeUnit && element.progress === undefined) {
-			const hours = element.startTime.hours.toString().padStart(2, '0');
-			const minutes = element.startTime.minutes.toString().padStart(2, '0');
-			editText += ` @ ${hours}:${minutes} [${element.duration} ${element.timeUnit}]`;
-		} else if (element.startTime) {
-			const hours = element.startTime.hours.toString().padStart(2, '0');
-			const minutes = element.startTime.minutes.toString().padStart(2, '0');
-			editText += ` @ ${hours}:${minutes}`;
-		} else if (element.duration && element.timeUnit && element.progress === undefined) {
-			editText += ` [${element.duration} ${element.timeUnit}]`;
-		}
+		editText = element.raw.replace(/^\t- (\[.\] )?/, '').trim();
 	}
 
 	function cancelEdit() {
