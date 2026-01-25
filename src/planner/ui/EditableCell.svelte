@@ -3,6 +3,7 @@
 	import TaskElement from "./TaskElement.svelte";
 	import { dndzone } from 'svelte-dnd-action';
 	import { flip } from "svelte/animate";
+	import { reconstructRawText } from "src/plugin/helpers";
 
 	interface EditableCellProps {
 		date: ISODate;
@@ -17,7 +18,22 @@
 
 	function updateElement(index: number, updatedElement: Element) {
 		const updatedItems = [...itemData.items];
-		updatedItems[index] = updatedElement;
+		
+		// Reconstruct raw text from element properties
+		const raw = reconstructRawText(
+			updatedElement.text,
+			updatedElement.isTask,
+			updatedElement.taskStatus,
+			updatedElement.startTime,
+			updatedElement.progress,
+			updatedElement.duration,
+			updatedElement.timeUnit
+		);
+		
+		updatedItems[index] = {
+			...updatedElement,
+			raw
+		};
 
 		const updatedData: ItemData = {
 			...itemData,
@@ -32,9 +48,23 @@
 		const element = updatedItems[index];
 		
 		if (element.isTask) {
+			const newTaskStatus = element.taskStatus == ' ' ? 'x' : ' ';
+			
+			// Reconstruct raw text with new task status
+			const raw = reconstructRawText(
+				element.text,
+				element.isTask,
+				newTaskStatus,
+				element.startTime,
+				element.progress,
+				element.duration,
+				element.timeUnit
+			);
+			
 			updatedItems[index] = {
 				...element,
-				checked: !element.checked
+				taskStatus: newTaskStatus,
+				raw
 			};
 
 			const updatedData: ItemData = {
@@ -79,17 +109,27 @@
   let nextId = $state(0);
 
   $effect(() => {
-    items = itemData.items.map((element) => {
-      // Reuse existing ID or create new one
-      if (!elementToId.has(element)) {
-        elementToId.set(element, nextId++);
-      }
-      return {
-        id: elementToId.get(element)!,
-        element: element
-      };
-    });
-  }) 
+	const currentElements = new Set(items.map(item => item.element));
+	const newElements = itemData.items.filter(el => !currentElements.has(el));
+	
+	if (newElements.length > 0 || items.length === 0) {
+		const newItems = itemData.items.map((element) => {
+			const existingItem = items.find(item => item.element === element);
+			if (existingItem) {
+				return existingItem;
+			}
+			
+			if (!elementToId.has(element)) {
+				elementToId.set(element, nextId++);
+			}
+			return {
+				id: elementToId.get(element)!,
+				element: element
+			};
+		});
+		items = newItems;
+	}
+	});
 
   function handleDndConsider(e: { detail: { items: any[]; }; }) {
     items = e.detail.items;
@@ -122,7 +162,7 @@
     }}
     onconsider={handleDndConsider}
     onfinalize={handleDndFinalize}
-  >
+  > 
 	{#each items as {id, element}, index (id)}
     <div animate:flip={{ duration: 200 }}>
       <TaskElement 

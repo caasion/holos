@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Element, ItemMeta, Time } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
-	import { formatTime, formatProgressDuration } from "src/plugin/helpers";
+	import { formatTime } from "src/plugin/helpers";
 
 	interface TaskElementProps {
 		element: Element;
@@ -149,7 +149,7 @@
 					{/if}
 					{#if element.startTime}
 						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-							⏰ {formatTime(element.startTime)}
+							{formatTime(element.startTime)}
 						</span>
 					{/if}
 				</div>

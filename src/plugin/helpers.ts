@@ -89,4 +89,33 @@ export function formatProgressDuration(progress: number | undefined, duration: n
     } else {
         return `[${duration} ${unit}]`
     }
+}
+
+/** [PURE HELPER] Reconstructs the raw text representation from Element properties. */
+export function reconstructRawText(
+    text: string,
+    isTask: boolean,
+    taskStatus: ' ' | 'x' | '-' | undefined,
+    startTime: Time | undefined,
+    progress: number | undefined,
+    duration: number | undefined,
+    timeUnit: 'min' | 'hr' | undefined
+): string {
+    let raw = '\t- ';
+
+    if (isTask && taskStatus) {
+        raw += `[${taskStatus}] `;
+    }
+    
+    raw += text.trim();
+
+    if (startTime) {
+        raw += ' @ ' + formatTime(startTime);
+    }
+
+    if (duration && timeUnit) {
+        raw += ' ' + formatProgressDuration(progress, duration, timeUnit);
+    }
+
+    return raw;
 } 
