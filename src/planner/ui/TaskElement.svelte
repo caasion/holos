@@ -23,24 +23,24 @@
 		editText = element.text;
 		
 		// Add task duration tracking if available
-		if (element.taskProgress !== undefined && element.taskUnit) {
-			if (element.taskLimit !== undefined) {
-				editText += ` [${element.taskProgress}/${element.taskLimit} ${element.taskUnit}]`;
+		if (element.progress !== undefined && element.timeUnit) {
+			if (element.duration !== undefined) {
+				editText += ` [${element.progress}/${element.duration} ${element.timeUnit}]`;
 			} else {
-				editText += ` [${element.taskProgress}/ ${element.taskUnit}]`;
+				editText += ` [${element.progress}/ ${element.timeUnit}]`;
 			}
 		}
 		
-		if (element.startTime && element.duration && element.durationUnit) {
+		if (element.startTime && element.duration && element.timeUnit && element.progress === undefined) {
 			const hours = element.startTime.hours.toString().padStart(2, '0');
 			const minutes = element.startTime.minutes.toString().padStart(2, '0');
-			editText += ` @ ${hours}:${minutes} (${element.duration} ${element.durationUnit})`;
+			editText += ` @ ${hours}:${minutes} [${element.duration} ${element.timeUnit}]`;
 		} else if (element.startTime) {
 			const hours = element.startTime.hours.toString().padStart(2, '0');
 			const minutes = element.startTime.minutes.toString().padStart(2, '0');
 			editText += ` @ ${hours}:${minutes}`;
-		} else if (element.duration && element.durationUnit) {
-			editText += ` (${element.duration} ${element.durationUnit})`;
+		} else if (element.duration && element.timeUnit && element.progress === undefined) {
+			editText += ` [${element.duration} ${element.timeUnit}]`;
 		}
 	}
 
@@ -55,73 +55,87 @@
 			return;
 		}
 
-		// Parse the text for task duration: [X/Y hr] or [X/Y min] or [X/ hr]
+		// Parse the text for task duration: [X/Y hr] or [X/Y min] or [X/ hr] or [X hr] or [X min]
 		let textWithoutTaskDuration = editText;
-		let taskProgress: number | undefined;
-		let taskLimit: number | undefined;
-		let taskUnit: 'min' | 'hr' | undefined;
+		let progress: number | undefined;
+		let duration: number | undefined;
+		let timeUnit: 'min' | 'hr' | undefined;
 		
 		const taskDurationMatch = textWithoutTaskDuration.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-		if (taskDurationMatch) {
-			const [fullMatch, progress, limit, unit] = taskDurationMatch;
-			taskProgress = parseInt(progress);
-			taskLimit = limit ? parseInt(limit) : undefined;
-			taskUnit = unit as 'min' | 'hr';
-			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-		} else {
-			// Handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
-			const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-			if (incompleteMatch) {
-				const [fullMatch, limit, unit] = incompleteMatch;
-				taskProgress = 0;
-				taskLimit = parseInt(limit);
-				taskUnit = unit as 'min' | 'hr';
-				textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-			}
-		}
-		
-		// Parse the text for time info: "Task @ 10:00 (2 hr)", "Task @ 10:00", or "Task (2 hr)"
-		const withFullTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-		const withStartTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})/);
-		const withDurationMatch = textWithoutTaskDuration.match(/(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
+		const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
+		const plainDurationMatch = textWithoutTaskDuration.match(/\[(?![\d\/])\s*(\d+)\s*(hr|min)\]/);
 		
 		const updatedElement: Element = { ...element };
 		
-		if (withFullTimeMatch) {
-			const [, text, hours, minutes, rawDuration, units] = withFullTimeMatch;
+		if (taskDurationMatch) {
+			const [fullMatch, prog, limit, unit] = taskDurationMatch;
+			progress = parseInt(prog);
+			duration = limit ? parseInt(limit) : undefined;
+			timeUnit = unit as 'min' | 'hr';
+			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+		} else if (incompleteMatch) {
+			// Handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
+			const [fullMatch, limit, unit] = incompleteMatch;
+			progress = 0;
+			duration = parseInt(limit);
+			timeUnit = unit as 'min' | 'hr';
+			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+		} else if (plainDurationMatch) {
+			//Handle [Y hr] as a set task duration of Y hr
+			const [fullMatch, rawDuration, units] = plainDurationMatch;
+			duration = parseInt(rawDuration);
+			timeUnit = units.startsWith('h') ? 'hr' : 'min';
+			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+		}
+
+		// Parse the text for starting time info: "Task @ 10:00 [2 hr]" or "Task @ 10:00"
+		const withStartTimeAndDurationMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})\s*\[(\d+)\s*(h|hr|hrs|m|min|mins)\]/);
+		const withStartTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})/);
+		
+		if (withStartTimeAndDurationMatch) {
+			const [, text, hours, minutes, rawDuration, units] = withStartTimeAndDurationMatch;
 			updatedElement.text = text.trim();
 			updatedElement.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-			updatedElement.duration = parseInt(rawDuration);
-			updatedElement.durationUnit = units.startsWith('h') ? 'hr' : 'min';
+			// Only set duration if not already set by progress tracking
+			if (progress === undefined) {
+				updatedElement.duration = parseInt(rawDuration);
+				updatedElement.timeUnit = units.startsWith('h') ? 'hr' : 'min';
+			}
 		} else if (withStartTimeMatch) {
 			const [, text, hours, minutes] = withStartTimeMatch;
 			updatedElement.text = text.trim();
 			updatedElement.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-			delete updatedElement.duration;
-			delete updatedElement.durationUnit;
-		} else if (withDurationMatch) {
-			const [, text, rawDuration, units] = withDurationMatch;
-			updatedElement.text = text.trim();
-			delete updatedElement.startTime;
-			updatedElement.duration = parseInt(rawDuration);
-			updatedElement.durationUnit = units.startsWith('h') ? 'hr' : 'min';
+			// Don't clear duration if set by progress tracking or plain duration
+			if (progress === undefined && !plainDurationMatch) {
+				delete updatedElement.duration;
+				delete updatedElement.timeUnit;
+			}
 		} else {
 			// No time info
 			updatedElement.text = textWithoutTaskDuration.trim();
 			delete updatedElement.startTime;
-			delete updatedElement.duration;
-			delete updatedElement.durationUnit;
+			// Don't delete duration if it was set by progress tracking or plainDurationMatch
+			if (progress === undefined && !plainDurationMatch) {
+				delete updatedElement.duration;
+				delete updatedElement.timeUnit;
+			}
 		}
 		
 		// Set task duration tracking
-		if (taskProgress !== undefined) {
-			updatedElement.taskProgress = taskProgress;
-			updatedElement.taskLimit = taskLimit;
-			updatedElement.taskUnit = taskUnit;
-		} else {
-			delete updatedElement.taskProgress;
-			delete updatedElement.taskLimit;
-			delete updatedElement.taskUnit;
+		if (progress !== undefined) {
+			updatedElement.progress = progress;
+			updatedElement.duration = duration;
+			updatedElement.timeUnit = timeUnit;
+		} else if (duration !== undefined && timeUnit !== undefined) {
+			// Set plain duration (no progress tracking)
+			updatedElement.duration = duration;
+			updatedElement.timeUnit = timeUnit;
+			delete updatedElement.progress;
+		} else if (progress === undefined && duration === undefined) {
+			// Clear all duration fields if no duration info provided
+			delete updatedElement.progress;
+			delete updatedElement.duration;
+			delete updatedElement.timeUnit;
 		}
 		
 		onUpdate(index, updatedElement);
@@ -178,26 +192,26 @@
 					/>
 				{/if}
 				<span class:checked={element.checked}>{element.text}</span>
-				{#if element.taskProgress !== undefined && element.taskUnit}
+				{#if element.progress !== undefined && element.timeUnit}
 					<CircularProgress 
-						progress={element.taskProgress} 
-						limit={element.taskLimit} 
-						unit={element.taskUnit}
+						progress={element.progress} 
+						limit={element.duration} 
+						unit={element.timeUnit}
 						size={20}
 					/>
 				{/if}
-				{#if element.startTime && element.duration && element.durationUnit}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-						({element.duration} {element.durationUnit})
-					</span>
-				{:else if element.startTime}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-					</span>
-				{:else if element.duration && element.durationUnit}
-					<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-						{element.duration} {element.durationUnit}
+			{#if element.startTime && element.duration && element.timeUnit && element.progress === undefined}
+				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+					{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
+					[{element.duration} {element.timeUnit}]
+				</span>
+			{:else if element.startTime}
+				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+					{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
+				</span>
+			{:else if element.duration && element.timeUnit && element.progress === undefined}
+				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+					[{element.duration} {element.timeUnit}]
 					</span>
 				{/if}
 			</div>

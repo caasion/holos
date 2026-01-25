@@ -102,30 +102,30 @@ export class PlannerParser {
         return itemData;
     }
     
-    private static parseElementLine(line: string): Element {
+    public static parseElementLine(line: string): Element {
 	    // Try to match with time information
 	    const withTimeMatch = line.match(/^\t(- \[(.?)\] |- )(.*?) @ (.*)/);
 	    
 	    if (withTimeMatch) {
 	        const [, id, checkmark, text, timeStr] = withTimeMatch;
 	        
-	        // Parse time: format like "10:00 (2 hr)" or "12:00 (30 min)" or just "10:00"
-	        const timeWithDurationMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
+	        // Parse time: format like "10:00 [2 hr]" or "12:00 [30 min]" or just "10:00"
+	        const timeWithDurationMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*\[(\d+)\s*(h|hr|hrs|m|min|mins)\]/);
 	        const timeOnlyMatch = timeStr.match(/(\d{1,2}):(\d{2})$/);
 	        
 	        // Extract task duration tracking from text: [X/Y hr] or [X/Y min]
 	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
+	        let progress: number | undefined;
+	        let duration: number | undefined;
+	        let timeUnit: 'min' | 'hr' | undefined;
 	        
 	        // Match [X/Y hr] or [X/Y min] or [X/ hr] or [X/ min]
 	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
 	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
+	            const [fullMatch, prog, limit, unit] = taskDurationMatch;
+	            progress = parseInt(prog);
+	            duration = limit ? parseInt(limit) : undefined;
+	            timeUnit = unit as 'min' | 'hr';
 	            // Remove the duration tracking from text
 	            cleanText = cleanText.replace(fullMatch, '').trim();
 	        } else {
@@ -133,9 +133,9 @@ export class PlannerParser {
 	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
 	            if (incompleteMatch) {
 	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
+	                progress = 0;
+	                duration = parseInt(limit);
+	                timeUnit = unit as 'min' | 'hr';
 	                cleanText = cleanText.replace(fullMatch, '').trim();
 	            }
 	        }
@@ -148,17 +148,20 @@ export class PlannerParser {
 	            checked: id.includes('[x]'),
 	        };
 	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
+	        if (progress !== undefined) {
+	            element.progress = progress;
+	            element.duration = duration;
+	            element.timeUnit = timeUnit;
 	        }
 	        
 	        if (timeWithDurationMatch) {
 	            const [, hours, minutes, rawDuration, units] = timeWithDurationMatch;
 	            element.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-	            element.duration = parseInt(rawDuration);
-	            element.durationUnit = units.startsWith('h') ? 'hr' : 'min';
+	            // Only set duration if not already set by progress tracking
+	            if (!element.duration) {
+	                element.duration = parseInt(rawDuration);
+	                element.timeUnit = units.startsWith('h') ? 'hr' : 'min';
+	            }
 	        } else if (timeOnlyMatch) {
 	            const [, hours, minutes] = timeOnlyMatch;
 	            element.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
@@ -183,31 +186,30 @@ export class PlannerParser {
 	    }
 	    
 	    // Try to match with duration only (no start time)
-	    const durationOnlyMatch = line.match(/^\t(- \[(.?)\] |- )(.*?)\s*\((\d+)\s*(h|hr|hrs|m|min|mins)\)/);
-	    
+    const durationOnlyMatch = line.match(/^\t(- \[(.?)\] |- )(.*?)\s*\[(\d+)\s*(h|hr|hrs|m|min|mins)\]/);
 	    if (durationOnlyMatch) {
 	        const [, id, checkmark, text, rawDuration, units] = durationOnlyMatch;
 	        
 	        // Extract task duration tracking from text
 	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
+	        let progress: number | undefined;
+	        let duration: number | undefined;
+	        let timeUnit: 'min' | 'hr' | undefined;
 	        
 	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
 	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
+	            const [fullMatch, prog, limit, unit] = taskDurationMatch;
+	            progress = parseInt(prog);
+	            duration = limit ? parseInt(limit) : undefined;
+	            timeUnit = unit as 'min' | 'hr';
 	            cleanText = cleanText.replace(fullMatch, '').trim();
 	        } else {
 	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
 	            if (incompleteMatch) {
 	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
+	                progress = 0;
+	                duration = parseInt(limit);
+	                timeUnit = unit as 'min' | 'hr';
 	                cleanText = cleanText.replace(fullMatch, '').trim();
 	            }
 	        }
@@ -218,14 +220,16 @@ export class PlannerParser {
 	            children: [],
 	            isTask: id.includes('[ ]') || id.includes('[x]'),
 	            checked: id.includes('[x]'),
-	            duration: parseInt(rawDuration),
-	            durationUnit: units.startsWith('h') ? 'hr' : 'min',
 	        };
 	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
+	        // Set duration from the [X hr] pattern if no progress tracking
+	        if (progress === undefined) {
+	            element.duration = parseInt(rawDuration);
+	            element.timeUnit = units.startsWith('h') ? 'hr' : 'min';
+	        } else {
+	            element.progress = progress;
+	            element.duration = duration;
+	            element.timeUnit = timeUnit;
 	        }
 	        
 	        return element;
@@ -239,24 +243,24 @@ export class PlannerParser {
 	        
 	        // Extract task duration tracking from text
 	        let cleanText = text.trim();
-	        let taskProgress: number | undefined;
-	        let taskLimit: number | undefined;
-	        let taskUnit: 'min' | 'hr' | undefined;
+	        let progress: number | undefined;
+	        let duration: number | undefined;
+	        let timeUnit: 'min' | 'hr' | undefined;
 	        
 	        const taskDurationMatch = cleanText.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
 	        if (taskDurationMatch) {
-	            const [fullMatch, progress, limit, unit] = taskDurationMatch;
-	            taskProgress = parseInt(progress);
-	            taskLimit = limit ? parseInt(limit) : undefined;
-	            taskUnit = unit as 'min' | 'hr';
+	            const [fullMatch, prog, limit, unit] = taskDurationMatch;
+	            progress = parseInt(prog);
+	            duration = limit ? parseInt(limit) : undefined;
+	            timeUnit = unit as 'min' | 'hr';
 	            cleanText = cleanText.replace(fullMatch, '').trim();
 	        } else {
 	            const incompleteMatch = cleanText.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
 	            if (incompleteMatch) {
 	                const [fullMatch, limit, unit] = incompleteMatch;
-	                taskProgress = 0;
-	                taskLimit = parseInt(limit);
-	                taskUnit = unit as 'min' | 'hr';
+	                progress = 0;
+	                duration = parseInt(limit);
+	                timeUnit = unit as 'min' | 'hr';
 	                cleanText = cleanText.replace(fullMatch, '').trim();
 	            }
 	        }
@@ -269,10 +273,10 @@ export class PlannerParser {
 	            checked: id.includes('[x]'),
 	        };
 	        
-	        if (taskProgress !== undefined) {
-	            element.taskProgress = taskProgress;
-	            element.taskLimit = taskLimit;
-	            element.taskUnit = taskUnit;
+	        if (progress !== undefined) {
+	            element.progress = progress;
+	            element.duration = duration;
+	            element.timeUnit = timeUnit;
 	        }
 	        
 	        return element;
@@ -288,7 +292,7 @@ export class PlannerParser {
     }
 
     // Serialize an Element back to a string
-    private static serializeElement(element: Element): string {
+    public static serializeElement(element: Element): string {
         let line = '\t';
         
         // Add task checkbox if needed
@@ -302,25 +306,25 @@ export class PlannerParser {
         line += element.text;
         
         // Add task duration tracking if available
-        if (element.taskProgress !== undefined && element.taskUnit) {
-            if (element.taskLimit !== undefined) {
-                line += ` [${element.taskProgress}/${element.taskLimit} ${element.taskUnit}]`;
+        if (element.progress !== undefined && element.timeUnit) {
+            if (element.duration !== undefined) {
+                line += ` [${element.progress}/${element.duration} ${element.timeUnit}]`;
             } else {
-                line += ` [${element.taskProgress}/ ${element.taskUnit}]`;
+                line += ` [${element.progress}/ ${element.timeUnit}]`;
             }
         }
         
         // Add time information if available
-        if (element.startTime && element.duration && element.durationUnit) {
+        if (element.startTime && element.duration && element.timeUnit && element.progress === undefined) {
             const hours = element.startTime.hours.toString().padStart(2, '0');
             const minutes = element.startTime.minutes.toString().padStart(2, '0');
-            line += ` @ ${hours}:${minutes} (${element.duration} ${element.durationUnit})`;
+            line += ` @ ${hours}:${minutes} [${element.duration} ${element.timeUnit}]`;
         } else if (element.startTime) {
             const hours = element.startTime.hours.toString().padStart(2, '0');
             const minutes = element.startTime.minutes.toString().padStart(2, '0');
             line += ` @ ${hours}:${minutes}`;
-        } else if (element.duration && element.durationUnit) {
-            line += ` (${element.duration} ${element.durationUnit})`;
+        } else if (element.duration && element.timeUnit && element.progress === undefined) {
+            line += ` [${element.duration} ${element.timeUnit}]`;
         }
         
         let result = line + '\n';
