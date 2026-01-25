@@ -2,6 +2,7 @@
 	import type { Element, ItemData, ItemID, ISODate, ItemType, ItemMeta } from "src/plugin/types";
 	import TaskElement from "./TaskElement.svelte";
 	import { dndzone } from 'svelte-dnd-action';
+	import { flip } from "svelte/animate";
 
 	interface EditableCellProps {
 		date: ISODate;
@@ -113,20 +114,23 @@
     use:dndzone={{
       items,
       flipDurationMs: 200,
-      dropTargetStyle: { outline: '2px dashed var(--interactive-accent)' }
+      dropTargetStyle: { outline: `1px dashed ${itemMeta.color}`, background: `${itemMeta.color}15` }
     }}
     onconsider={handleDndConsider}
     onfinalize={handleDndFinalize}
   >
 	{#each items as {id, element}, index (id)}
-		<TaskElement 
-			{element}
-			{index}
-			{itemMeta}
-			onUpdate={updateElement}
-			onDelete={deleteElement}
-			onToggle={toggleTask}
-		/>
+    <div animate:flip={{ duration: 200 }}>
+      <TaskElement 
+        {element}
+        {index}
+        {itemMeta}
+        onUpdate={updateElement}
+        onDelete={deleteElement}
+        onToggle={toggleTask}
+      />
+    </div>
+		
 	{/each}
   </div>
     <div class="add-btn-container">
