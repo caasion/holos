@@ -192,7 +192,6 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		cursor: move; /* For drag and drop */
 	}
 
 	.element-content {
