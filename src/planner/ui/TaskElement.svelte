@@ -70,23 +70,9 @@
 			timeUnit = unitMatch as 'min' | 'hr';
 		}
 
-		let raw = '\t- ';
-
-		if (isTask) 
-			raw += `[${taskStatus}] `
-        
-        raw += editText.trim();
-
-		if (startTime)
-			raw += ' @ ' + formatTime(startTime);
-
-		if (duration && timeUnit) 
-			raw += ' ' + formatProgressDuration(progress, duration, timeUnit);
-
 		const updatedElement: Element = {
 			...element,
-			raw,
-			text: editText,
+			text: editText.trim(),
 			isTask,
 			taskStatus,
 			startTime,
@@ -125,14 +111,6 @@
 <div class="task-element">
 	<div class="element-row">
 		{#if isEditing}
-			{#if element.isTask}
-				<input
-					type="checkbox"
-					checked={element.checked}
-					onchange={toggleTask}
-					class="task-checkbox"
-				/>
-			{/if}
 			<input
 				type="text"
 				bind:value={editText}
@@ -142,37 +120,39 @@
 			/>
 		{:else}
 			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
-				{#if element.isTask}
+				{#if element.duration && element.timeUnit}
+				<CircularProgress 
+					progress={element.progress}
+					duration={element.duration} 
+					unit={element.timeUnit}
+					size={20}
+				/>
+				{:else if element.taskStatus}
 					<input
 						type="checkbox"
-						checked={element.checked}
+						checked={element.taskStatus == "x"}
 						onchange={toggleTask}
 						class="task-checkbox"
 					/>
 				{/if}
-				<span class:checked={element.checked}>{element.text}</span>
-				{#if element.progress !== undefined && element.timeUnit}
-					<CircularProgress 
-						progress={element.progress} 
-						limit={element.duration} 
-						unit={element.timeUnit}
-						size={20}
-					/>
-				{/if}
-			{#if element.startTime && element.duration && element.timeUnit && element.progress === undefined}
-				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-					{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-					[{element.duration} {element.timeUnit}]
+				<span 
+					class:checked={element.taskStatus == "x" || (!element.progress && element.duration) || (element.progress && element.duration && element.progress >= element.duration)} 
+					class:cancelled={element.taskStatus == "-"}	
+				>
+					{element.text}
 				</span>
-			{:else if element.startTime}
-				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-					{element.startTime.hours.toString().padStart(2, '0')}:{element.startTime.minutes.toString().padStart(2, '0')}
-				</span>
-			{:else if element.duration && element.timeUnit && element.progress === undefined}
-				<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-					[{element.duration} {element.timeUnit}]
-					</span>
-				{/if}
+				<div class="time-badge-container">
+					{#if element.duration && element.timeUnit}
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+							{element.duration} {element.timeUnit}
+						</span>
+					{/if}
+					{#if element.startTime}
+						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+							⏰ {formatTime(element.startTime)}
+						</span>
+					{/if}
+				</div>
 			</div>
 			<button class="delete-btn" onclick={deleteElement} title="Delete">×</button>
 		{/if}
@@ -223,13 +203,26 @@
 		opacity: 0.6;
 	}
 
+	.cancelled {
+		text-decoration: line-through;
+		opacity: 0.6;
+	}
+
+	.time-badge-container {
+		margin-left: auto;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		justify-content: flex-end;
+		align-items: center;
+	}
+
 	.time-badge {
 		font-size: 0.85em;
 		background-color: var(--interactive-accent);
 		color: white;
 		padding: 2px 6px;
 		border-radius: 3px;
-		margin-left: auto;
 	}
 
 	.element-input {
