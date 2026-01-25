@@ -3,9 +3,9 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-![Ultimate Planner Screen Shot][product-screenshot]
+![Holos Screen Shot][product-screenshot]
 
-The Ultimate Planner is an [Obsidian](https://obsidian.md) plugin to make long-term planning much simpler. Instead of being stuck with rigid todo lists, you can plan what to do for each action item (i.e. a course or a fitness goal) over the long-term.
+Holos is an [Obsidian](https://obsidian.md) plugin to make long-term planning much simpler. Instead of being stuck with rigid todo lists, you can plan what to do for each action item (i.e. a course or a fitness goal) over the long-term.
 
 I've started to document my development of this plugin! Please see [devlog]!
 
@@ -22,10 +22,10 @@ I designed and developed this plugin as a hybrid between the two, which allows y
 The advantage of the table format is two fold:
 
 Looking down through a column allows you to see your tasks/plans for a day.
-![Ultimate Planner Column][column]
+![Holos Column][column]
 
 At the same time, it is conducive to long-term planning as you can plan what to do for one action item individually across columns. (An action item is a way to group together tasks based on a common objective that it contributes to, i.e. school, fitness, or family).
-![Ultimate Planner Row][row]
+![Holos Row][row]
 
 I don't intend this calendar format to replace daily planning or google calendar--rather, I want it to act as a bridge between the two, which is why I am working on daily notes integration and google calendar integration. Please see [roadmap]!
 
@@ -64,7 +64,7 @@ To install:
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/caasion/obsidian-ultimate-planner
+   git clone https://github.com/caasion/obsidian-holos
    ```
 2. Install NPM packages
    ```sh

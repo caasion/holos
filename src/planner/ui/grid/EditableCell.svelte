@@ -206,9 +206,6 @@
 </script>
 
 <div class="editable-cell">
-	{#if showLabel}
-		<div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>{itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}</div>
-	{/if}
 	{#each itemData.items as element, index}
 		<div class="element-row">
 			{#if isEditing && editingIndex === index}
@@ -237,8 +234,9 @@
 							class="task-checkbox"
 						/>
 					{/if}
-					<span class:checked={element.checked}>{element.text}</span>
-					{#if element.taskProgress !== undefined && element.taskUnit}
+					<span style="flex: 1" class:checked={element.checked}>{element.text}</span>
+					<div class="element-info">
+						{#if element.taskProgress !== undefined && element.taskUnit}
 						<CircularProgress 
 							progress={element.taskProgress} 
 							limit={element.taskLimit} 
@@ -260,7 +258,7 @@
 							{element.duration} {element.durationUnit}
 						</span>
 					{/if}
-                    
+					</div>
 				</div>
 				<button class="delete-btn" onclick={() => deleteElement(index)} title="Delete">×</button>
 			{/if}
@@ -326,7 +324,11 @@
 		color: white;
 		padding: 2px 6px;
 		border-radius: 3px;
-		margin-left: auto;
+	}
+
+	.element-info {
+		display: flex;
+		gap: 4px;
 	}
 
 	.element-input {
@@ -383,14 +385,5 @@
 		background-color: var(--background-modifier-hover);
 		border-color: var(--interactive-accent);
 		color: var(--text-normal);
-	}
-
-	.row-label {
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-weight: 600;
-		margin-bottom: 4px;
-		font-size: 0.9em;
-		width: fit-content;
 	}
 </style>

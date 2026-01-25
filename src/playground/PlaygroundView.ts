@@ -1,14 +1,14 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
-import UltimatePlannerPlugin from '../main';
+import HolosPlugin from '../main';
 import PlaygroundNew from "./PlaygroundNew.svelte";
 
 export const PLAYGROUND_VIEW_TYPE = "playground-view"
 
 export class PlaygroundView extends ItemView {
-    plugin: UltimatePlannerPlugin;
+    plugin: HolosPlugin;
 
-    constructor(leaf: WorkspaceLeaf, plugin: UltimatePlannerPlugin) {
+    constructor(leaf: WorkspaceLeaf, plugin: HolosPlugin) {
         super(leaf);
         this.plugin = plugin;
     }

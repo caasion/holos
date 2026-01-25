@@ -1,4 +1,4 @@
-import type { BlockMeta, DataService, DateMapping, ISODate, Item, TDate } from "src/plugin/types";
+import type { BlockMeta, DataService, DateMapping, ISODate, Item, ItemDict, TDate } from "src/plugin/types";
 import type { PlannerActions } from "./itemActions";
 
 export function getDateMappings(dates: ISODate[], plannerActions: PlannerActions) {
@@ -8,7 +8,7 @@ export function getDateMappings(dates: ISODate[], plannerActions: PlannerActions
 		}))
 }
 
-export function getSortedTemplates(dateMappings: DateMapping[], data: DataService) {
+export function getSortedTemplates(dateMappings: DateMapping[], templates: Record<TDate, ItemDict>) {
     const obj: Record<TDate, Item[]> = {};
 
     const allTemplateDates = new Set(dateMappings.map(d => d.tDate));
@@ -16,7 +16,7 @@ export function getSortedTemplates(dateMappings: DateMapping[], data: DataServic
     allTemplateDates.forEach(tDate => {
         if (tDate == "") return;
         
-        const template = data.getTemplate(tDate); 
+        const template = templates[tDate]; 
     
         const itemsArray: Item[] = Object.entries(template)
             .map(([id, meta]) => ({id,meta}))

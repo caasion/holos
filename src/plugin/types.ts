@@ -137,7 +137,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     weekStartOn: 0,
 
     autosaveDebounceMs: 200,
-    sectionHeading: "Ultimate Planner",
+    sectionHeading: "Holos",
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,
@@ -173,8 +173,8 @@ export interface HelperService {
     hashText: (text: string) => Promise<string>;
     generateID: (prefix: string) => string;
     getISODate: (date: Date) => ISODate;
-    getISODates: (anchor: Date, amount: number, weekStartsOn?: Day) => ISODate[];
-    getLabelFromDateRange: (first: Date, last: Date) => string;
+    getISODates: (anchor: ISODate, amount: number, weekStartsOn?: Day) => ISODate[];
+    getLabelFromDateRange: (first: ISODate, last: ISODate) => string;
     addDaysISO: (iso: ISODate, n: number) => ISODate;
     swapArrayItems: <T>(array: T[], a: number, b: number) => T[]; 
     idUsedInTemplates: (templates: Record<ISODate, Record<ItemID, ItemMeta>>, rowID: ItemID) => boolean;
