@@ -137,47 +137,40 @@
 	}
 
   /* Drag and Drop */
-  let items = $state<any[]>([]);
   let elementToId = $state(new Map<Element, number>());
   let nextId = $state(0);
+  let items = $state<any[]>([]);
+  let isDragging = $state(false);
 
+  // Sync items with itemData.items when not dragging
   $effect(() => {
-	const currentElements = new Set(items.map(item => item.element));
-	const newElements = itemData.items.filter(el => !currentElements.has(el));
-	
-	if (newElements.length > 0 || items.length === 0) {
-		const newItems = itemData.items.map((element) => {
-			const existingItem = items.find(item => item.element === element);
-			if (existingItem) {
-				return existingItem;
-			}
-			
-			if (!elementToId.has(element)) {
-				elementToId.set(element, nextId++);
-			}
-			return {
-				id: elementToId.get(element)!,
-				element: element
-			};
-		});
-		items = newItems;
-	}
-	});
+		if (!isDragging) {
+			items = itemData.items.map((element) => {
+				if (!elementToId.has(element)) {
+					elementToId.set(element, nextId++);
+				}
+				return {
+					id: elementToId.get(element)!,
+					element: element
+				};
+			});
+		}
+  });
 
   function handleDndConsider(e: { detail: { items: any[]; }; }) {
-    items = e.detail.items;
+		isDragging = true;
+		items = e.detail.items;
   }
 
   function handleDndFinalize(e: { detail: { items: any[]; }; }) {
-    items = e.detail.items;
-    
-    const reorderedElements = items.map(item => item.element);
-    const updatedData: ItemData = {
-      ...itemData,
-      items: reorderedElements
-    };
-    
-    onUpdate(date, itemMeta.id, updatedData);
+		isDragging = false;
+		const reorderedElements = e.detail.items.map(item => item.element);
+		const updatedData: ItemData = {
+			...itemData,
+			items: reorderedElements
+		};
+		
+		onUpdate(date, itemMeta.id, updatedData);
   }
 
 </script>
