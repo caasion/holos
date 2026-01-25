@@ -65,8 +65,6 @@
 			isTask: isTask,
 		};
 
-    items = [...items, { id: items.length, element: newElement }]
-
 		const updatedData: ItemData = {
 			...itemData,
 			items: [...itemData.items, newElement]
@@ -76,14 +74,21 @@
 	}
 
   /* Drag and Drop */
-
   let items = $state<any[]>([]);
+  let elementToId = $state(new Map<Element, number>());
+  let nextId = $state(0);
 
   $effect(() => {
-    items = itemData.items.map((element, index) => ({
-      id: index, // Use index as unique ID for dnd
-      element: element
-    }));
+    items = itemData.items.map((element) => {
+      // Reuse existing ID or create new one
+      if (!elementToId.has(element)) {
+        elementToId.set(element, nextId++);
+      }
+      return {
+        id: elementToId.get(element)!,
+        element: element
+      };
+    });
   }) 
 
   function handleDndConsider(e: { detail: { items: any[]; }; }) {
@@ -93,7 +98,6 @@
   function handleDndFinalize(e: { detail: { items: any[]; }; }) {
     items = e.detail.items;
     
-    // Update the actual itemData with the new order
     const reorderedElements = items.map(item => item.element);
     const updatedData: ItemData = {
       ...itemData,
