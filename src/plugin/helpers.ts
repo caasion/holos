@@ -1,4 +1,4 @@
-import type { ISODate, Element } from './types';
+import type { ISODate, Element, Time } from './types';
 import { addDays, eachDayOfInterval, endOfWeek, format, parseISO, startOfWeek, type Day } from 'date-fns';
 
 /** Formats a Date into an ISODate. */
@@ -137,3 +137,46 @@ function round(number: number, decimalPlaces: number = 2) {
 export function getTimeUnit(totalMinutes: number): TimeUnit {
     return totalMinutes % 60 == 0 ? 'hr' : 'min';
 }
+/** [PURE HELPER] Takes in a Time object and returns a well-formatted time string. */
+export function formatTime(time: Time): string {
+    const { hours, minutes } = time;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
+/** [PURE HELPER] Takes progress, duration, and a time unit and returns a well-formatted time string. */
+export function formatProgressDuration(progress: number | undefined, duration: number, unit: 'min' | 'hr'): string {
+    if (progress) {
+        return `[${progress}/${duration} ${unit}]`;
+    } else {
+        return `[${duration} ${unit}]`
+    }
+}
+
+/** [PURE HELPER] Reconstructs the raw text representation from Element properties. */
+export function reconstructRawText(
+    text: string,
+    isTask: boolean,
+    taskStatus: ' ' | 'x' | '-' | undefined,
+    startTime: Time | undefined,
+    progress: number | undefined,
+    duration: number | undefined,
+    timeUnit: 'min' | 'hr' | undefined
+): string {
+    let raw = '\t- ';
+
+    if (isTask && taskStatus) {
+        raw += `[${taskStatus}] `;
+    }
+    
+    raw += text.trim();
+
+    if (startTime) {
+        raw += ' @ ' + formatTime(startTime);
+    }
+
+    if (duration && timeUnit) {
+        raw += ' ' + formatProgressDuration(progress, duration, timeUnit);
+    }
+
+    return raw;
+} 

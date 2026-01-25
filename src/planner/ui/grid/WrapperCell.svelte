@@ -31,11 +31,11 @@
         {/if}
         
         {#if itemData}
-        {@const {dividend: progress, divisor: limit, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
+        {@const {dividend: progress, divisor: duration, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
         <div class="progress-circle">
             <CircularProgress
                 {progress}
-                {limit}
+                {duration}
                 {unit}
                 size={20}
             />

@@ -1,6 +1,6 @@
 {
 	"name": "holos",
-	"version": "2.1.1",
+	"version": "2.2.1",
 	"description": "Create a long-range plan for your action items.",
 	"main": "main.js",
 	"scripts": {

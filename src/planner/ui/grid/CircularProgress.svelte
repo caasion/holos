@@ -1,30 +1,25 @@
 <script lang="ts">
 	interface CircularProgressProps {
-		progress: number; // completed time
-		limit?: number; // total time allocated (undefined means no limit)
+		progress?: number; // completed time (optional)
+		duration: number; // total time allocated (required)
 		unit: 'min' | 'hr';
 		size?: number; // size of the circle in pixels
 	}
 
-	let { progress, limit, unit, size = 24 }: CircularProgressProps = $props();
+	let { progress, duration, unit, size = 24 }: CircularProgressProps = $props();
 
-	// Calculate percentage (0-100+)
+	// Calculate percentage (0-100+) when progress is tracked
 	let percentage = $derived.by(() => {
-		if (progress === 0 && limit === undefined || limit === 0) {
-			// No limit with no progress: gray
-			return 0;
+		if (progress === undefined || duration === 0) {
+			return -1; // Special value for no progress tracking
 		}
-		if (limit === undefined || limit === 0) {
-			// No limit: always blue
-			return -1; // Special value for no-limit case
-		}
-		return (progress / limit) * 100;
+		return (progress / duration) * 100;
 	});
 
 	// Determine color based on percentage
 	let color = $derived.by(() => {
 		if (percentage === -1 || percentage >= 100) {
-			return '#4a9eff'; // blue for no-limit or complete/overflow
+			return '#4a9eff'; // blue for no progress tracking or complete/overflow
 		} else if (percentage < 33) {
 			return '#ff4444'; // red
 		} else if (percentage < 66) {
@@ -41,7 +36,7 @@
 	
 	let strokeDashoffset = $derived.by(() => {
 		if (percentage === -1) {
-			// No limit: show as full circle
+			// No progress tracking: show as full circle
 			return 0;
 		}
 		// Cap at 100% visually even if overflowing
@@ -50,10 +45,23 @@
 	});
 
 	let displayText = $derived.by(() => {
-		if (limit === undefined) {
-			return `${progress}`;
+		if (progress === undefined) {
+			return `${duration}`;
 		}
-		return `${progress}/${limit}`;
+		return `${progress}/${duration}`;
+	});
+
+	// Calculate font size based on the number of digits
+	let fontSize = $derived.by(() => {
+		const displayValue = progress !== undefined ? progress : duration;
+		
+		if (displayValue < 10) {
+			return size * 0.8; // 0-9: largest
+		} else if (displayValue < 100) {
+			return size * 0.6; // 10-99: medium
+		} else {
+			return size * 0.45; // 100-999: smallest
+		}
 	});
 </script>
 
@@ -82,6 +90,17 @@
 			transform={`rotate(-90 ${size / 2} ${size / 2})`}
 			class="progress-circle"
 		/>
+		<!-- Center text -->
+		<text
+			x={size / 2}
+			y={size / 2 + size * 0.08}
+			text-anchor="middle"
+			dominant-baseline="middle"
+			class="progress-text"
+			style={`font-size: ${fontSize}px;`}
+		>
+			{progress !== undefined ? progress : duration}
+		</text>
 	</svg>
 </div>
 
@@ -95,6 +114,12 @@
 
 	.progress-circle {
 		transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+	}
+
+	.progress-text {
+		fill: var(--text-normal);
+		font-weight: 600;
+		user-select: none;
 	}
 
 	svg {
