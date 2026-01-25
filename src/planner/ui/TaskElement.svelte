@@ -29,9 +29,8 @@
 	function saveEdit() {
 		// Parse the text for task duration
 		let textWithoutTaskDuration = editText;
-		let progress: number | undefined = undefined;
-		let duration: number | undefined = undefined;
-		let timeUnit: 'min' | 'hr' | undefined = undefined;
+
+		let { text: elementText, startTime, progress, duration, timeUnit }: Element = element;
 		
 		// [X/Y hr] or [X/Y min]
 		const taskDurationMatch = textWithoutTaskDuration.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
@@ -39,8 +38,6 @@
 		const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
 		// [X hr] or [X min]
 		const plainDurationMatch = textWithoutTaskDuration.match(/\[(?![\d\/])\s*(\d+)\s*(hr|min)\]/);
-		
-		const updatedElement: Element = { ...element };
 		
 		if (taskDurationMatch) {
 			// Handle [X/Y hr] or [X/Y min]
@@ -69,17 +66,23 @@
 		
 		if (withStartTimeMatch) {
 			const [, text, hours, minutes] = withStartTimeMatch;
-			updatedElement.text = text.trim();
-			updatedElement.startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
+			elementText = text.trim();
+			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
 		} else {
 			// No time info
-			updatedElement.text = textWithoutTaskDuration.trim();
-			delete updatedElement.startTime;
+			elementText = textWithoutTaskDuration.trim();
 		}
 
-		progress !== undefined ? updatedElement.progress = progress : delete updatedElement.progress;
-		duration !== undefined ? updatedElement.duration = duration : delete updatedElement.duration;
-		timeUnit !== undefined ? updatedElement.timeUnit = timeUnit : delete updatedElement.timeUnit;
+		// Build the updated element object
+		const updatedElement: Element = {
+			...element,
+			text: elementText,
+			// Only include properties that are defined
+			...(startTime && { startTime }),
+			...(progress !== undefined && { progress }),
+			...(duration !== undefined && { duration }),
+			...(timeUnit && { timeUnit })
+		};
 		
 		onUpdate(index, updatedElement);
 		cancelEdit();
