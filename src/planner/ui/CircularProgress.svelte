@@ -50,6 +50,19 @@
 		}
 		return `${progress}/${duration}`;
 	});
+
+	// Calculate font size based on the number of digits
+	let fontSize = $derived.by(() => {
+		const displayValue = progress !== undefined ? progress : duration;
+		
+		if (displayValue < 10) {
+			return size * 0.8; // 0-9: largest
+		} else if (displayValue < 100) {
+			return size * 0.6; // 10-99: medium
+		} else {
+			return size * 0.45; // 100-999: smallest
+		}
+	});
 </script>
 
 <div class="circular-progress" style={`width: ${size}px; height: ${size}px;`} title={`${displayText} ${unit}`}>
@@ -84,7 +97,7 @@
 			text-anchor="middle"
 			dominant-baseline="middle"
 			class="progress-text"
-			style={`font-size: ${size * 0.8}px;`}
+			style={`font-size: ${fontSize}px;`}
 		>
 			{progress !== undefined ? progress : duration}
 		</text>
