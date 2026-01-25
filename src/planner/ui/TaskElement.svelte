@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { Element, ItemMeta } from "src/plugin/types";
+	import type { Element, ItemMeta, Time } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
+	import { formatTime, formatProgressDuration } from "src/plugin/helpers";
 
 	interface TaskElementProps {
 		element: Element;
@@ -19,7 +20,7 @@
 
 	function startEdit() {
 		isEditing = true;
-		editText = element.raw.replace(/^\t- (\[.\] )?/, '').trim();
+		editText = element.raw.replace(/^\t- /, '').trim();
 	}
 
 	function cancelEdit() {
@@ -29,65 +30,70 @@
 	}
 
 	function saveEdit() {
-		// Parse the text for task duration
-		let textWithoutTaskDuration = editText;
-
-		let { text: elementText, startTime, progress, duration, timeUnit }: Element = element;
-		
-		// [X/Y hr] or [X/Y min]
-		const taskDurationMatch = textWithoutTaskDuration.match(/\[(\d+)\/\s*(\d*)\s*(hr|min)\]/);
-		// [/Y hr] or [/Y min]
-		const incompleteMatch = textWithoutTaskDuration.match(/\[\/\s*(\d+)\s*(hr|min)\]/);
-		// [X hr] or [X min]
-		const plainDurationMatch = textWithoutTaskDuration.match(/\[(?![\d\/])\s*(\d+)\s*(hr|min)\]/);
-		
-		if (taskDurationMatch) {
-			// Handle [X/Y hr] or [X/Y min]
-			const [fullMatch, prog, limit, unit] = taskDurationMatch;
-			progress = parseInt(prog);
-			duration = limit ? parseInt(limit) : undefined;
-			timeUnit = unit as 'min' | 'hr';
-			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-		} else if (incompleteMatch) {
-			// Handle [/Y hr] or [/Y min] and refactor to [0/Y hr]
-			const [fullMatch, limit, unit] = incompleteMatch;
-			progress = 0;
-			duration = parseInt(limit);
-			timeUnit = unit as 'min' | 'hr';
-			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
-		} else if (plainDurationMatch) {
-			//Handle [Y hr] as a set task duration of Y hr
-			const [fullMatch, rawDuration, units] = plainDurationMatch;
-			duration = parseInt(rawDuration);
-			timeUnit = units.startsWith('h') ? 'hr' : 'min';
-			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
 		if (skipBlur) {
 			skipBlur = false;
 			return;
 		}
 
-		// Parse the text for starting time info: "Task @ 10:00"
-		const withStartTimeMatch = textWithoutTaskDuration.match(/(.*?) @ (\d{1,2}):(\d{2})/);
-		
-		if (withStartTimeMatch) {
-			const [, text, hours, minutes] = withStartTimeMatch;
-			elementText = text.trim();
-			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
-		} else {
-			// No time info
-			elementText = textWithoutTaskDuration.trim();
+		let isTask = false;
+		let taskStatus: ' ' | 'x' | '-' | undefined;
+		let startTime: Time | undefined;
+		let progress: number | undefined;
+		let duration: number | undefined;
+		let timeUnit: 'min' | 'hr' | undefined;
+
+		const taskStatusRegex = /^\[([ x-])\]/;
+		const startTimeRegex = /@\s*(\d{1,2}):(\d{2})/;
+		const progressDurationRegex = /\[(?:(\d+)?(\/))?(\d+)\s*(hr|min)\]/;
+
+		const taskStatusMatch = editText.match(taskStatusRegex);
+		if (taskStatusMatch) {
+			const [fullMatch, checkmark] = taskStatusMatch;
+			editText = editText.replace(fullMatch, '').trim();
+			isTask = true;
+			taskStatus = checkmark as typeof taskStatus;
 		}
 
-		// Build the updated element object
+		const startTimeMatch = editText.match(startTimeRegex);
+		if (startTimeMatch) {
+			const [fullMatch, hours, minutes] = startTimeMatch;
+			editText = editText.replace(fullMatch, '').trim();
+			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
+		}
+
+		const progressDurationMatch = editText.match(progressDurationRegex);
+		if (progressDurationMatch) {
+			const [fullMatch, progressMatch, hasProgress, durationMatch, unitMatch] = progressDurationMatch;
+			editText = editText.replace(fullMatch, '');
+			progress = hasProgress ? (parseInt(progressMatch) || 0) : undefined;
+			duration = parseInt(durationMatch);
+			timeUnit = unitMatch as 'min' | 'hr';
+		}
+
+		let raw = '\t- ';
+
+		if (isTask) 
+			raw += `[${taskStatus}] `
+        
+        raw += editText.trim();
+
+		if (startTime)
+			raw += ' @ ' + formatTime(startTime);
+
+		if (duration && timeUnit) 
+			raw += ' ' + formatProgressDuration(progress, duration, timeUnit);
+
 		const updatedElement: Element = {
 			...element,
-			text: elementText,
-			// Only include properties that are defined
-			...(startTime && { startTime }),
-			...(progress !== undefined && { progress }),
-			...(duration !== undefined && { duration }),
-			...(timeUnit && { timeUnit })
-		};
+			raw,
+			text: editText,
+			isTask,
+			taskStatus,
+			startTime,
+			progress,
+			duration,
+			timeUnit,
+		}
 		
 		onUpdate(index, updatedElement);
 		cancelEdit();
