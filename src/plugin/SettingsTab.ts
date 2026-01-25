@@ -1,12 +1,12 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import UltimatePlannerPlugin from '../main';
+import HolosPlugin from '../main';
 import type { Day } from 'date-fns';
 
 
-export class UltimatePlannerPluginTab extends PluginSettingTab {
-    plugin: UltimatePlannerPlugin;
+export class HolosSettingsTab extends PluginSettingTab {
+    plugin: HolosPlugin;
 
-    constructor(app: App, plugin: UltimatePlannerPlugin) {
+    constructor(app: App, plugin: HolosPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -83,16 +83,16 @@ export class UltimatePlannerPluginTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Section Heading')
-            .setDesc('The heading in your daily notes where tasks are stored (e.g., "Ultimate Planner", "Tasks", "Daily Plan")')
-            .addText(text => 
+            .setDesc('The heading in your daily notes where tasks are stored (e.g., "Holos", "Tasks", "Daily Plan")')
+            .addText((text) => {
                 text
-                    .setPlaceholder('Ultimate Planner')
+                    .setPlaceholder('Holos')
                     .setValue(this.plugin.settings.sectionHeading)
                     .onChange(async (value) => {
-                        this.plugin.settings.sectionHeading = value || 'Ultimate Planner';
+                        this.plugin.settings.sectionHeading = value || 'Holos';
                         await this.plugin.queueSave();
-                    })
-            );
+                    });
+            });
 
         new Setting(containerEl)
             .setName('Autosave debounce (ms)')

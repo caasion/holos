@@ -6,16 +6,17 @@
 	import type { BlockMeta, DataService, DateMapping, HelperService, ISODate, Item, ItemData, ItemDict, ItemID, ItemMeta, PluginSettings, TDate } from "src/plugin/types";
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { DailyNoteService } from "src/planner/logic/reader";
-	import FloatBlock from "src/planner/ui/FloatBlock.svelte";
+	import FloatBlock from "src/planner/ui/float/FloatBlock.svelte";
 	import TemplateEditor from "src/templates/TemplateEditor.svelte";
-	import EditableCell from "./EditableCell.svelte";
+	import EditableCell from "./grid/EditableCell.svelte";
 	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
 	import DebugBlock from "src/playground/DebugBlock.svelte";
 	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
 	import Navbar from "./Navbar.svelte";
-	import HeaderCell from "./HeaderCell.svelte";
-	import EmptyCell from "./EmptyCell.svelte";
-	import PlannerGrid from "./PlannerGrid.svelte";
+	import HeaderCell from "./grid/HeaderCell.svelte";
+	import EmptyCell from "./grid/EmptyCell.svelte";
+	import PlannerGrid from "./grid/PlannerGrid.svelte";
+	import { templates } from "../plannerStore";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -51,17 +52,16 @@
 	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, plannerActions));
 
 	// Convert a template into a sorted array of items
-	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, data));
+	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, $templates));
 	
 	// Calculate the number of rows needed and derive the dates involved in each block
 	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
 
 	// Get parsed content from the service store
-	let parsedContent = $state<Record<ISODate, Record<ItemID, ItemData>>>({});
-	dailyNoteService.parsedContent.subscribe(value => {
-		parsedContent = value;
-	});
+	const parsedContentStore = dailyNoteService.parsedContent;
 
+	let parsedContent = $derived<Record<ISODate, Record<ItemID, ItemData>>>($parsedContentStore);
+	
 	// Load daily note content when dates change
 	$effect(() => {
 		dailyNoteService.loadMultipleDates(dates);
@@ -99,12 +99,7 @@
 	
 </script>
 
-<h1>Holos</h1>
-
-<DebugBlock label={"Dates:"} object={dates} />
-<DebugBlock label={"Columns Meta:"} object={dateMappings} />
-<DebugBlock label={"Sorted Templates:"} object={sortedTemplateDates} />
-<DebugBlock label={"Blocks Meta:"} object={blocksMeta} />
+<h1>Holos</h1> 
 
 <Navbar
 	{goTo}
@@ -113,7 +108,7 @@
 	label={getLabelFromDateRange(dates[0], dates[dates.length - 1])}
 	{anchor}
 
-	view={"Planner"}
+	view={inTemplateEditor ? "Planner" : "Templates Editor"}
 	toggleView={() => inTemplateEditor = !inTemplateEditor}
 />
 

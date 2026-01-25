@@ -10,9 +10,9 @@
 	import { getAllDailyNotes, getDailyNote, createDailyNote } from "obsidian-daily-notes-interface";
 	import moment from "moment";
 	import { Notice } from "obsidian";
-	import FloatBlock from "src/planner/ui/FloatBlock.svelte";
+	import FloatBlock from "src/planner/ui/float/FloatBlock.svelte";
 	import TemplateEditor from "src/templates/TemplateEditor.svelte";
-	import EditableCell from "../planner/ui/EditableCell.svelte";
+	import EditableCell from "../planner/ui/grid/EditableCell.svelte";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -344,7 +344,7 @@
 	}
 </script>
 
-<h1>The Ultimate Planner</h1>
+<h1>Holos</h1>
 
 <!-- <DebugBlock label={"Dates:"} object={dates} />
 <DebugBlock label={"Columns Meta:"} object={columnsMeta} />
