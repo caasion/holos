@@ -77,6 +77,17 @@
 			transform={`rotate(-90 ${size / 2} ${size / 2})`}
 			class="progress-circle"
 		/>
+		<!-- Center text -->
+		<text
+			x={size / 2}
+			y={size / 2 + size * 0.08}
+			text-anchor="middle"
+			dominant-baseline="middle"
+			class="progress-text"
+			style={`font-size: ${size * 0.8}px;`}
+		>
+			{progress !== undefined ? progress : duration}
+		</text>
 	</svg>
 </div>
 
@@ -90,6 +101,12 @@
 
 	.progress-circle {
 		transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+	}
+
+	.progress-text {
+		fill: var(--text-normal);
+		font-weight: 600;
+		user-select: none;
 	}
 
 	svg {
