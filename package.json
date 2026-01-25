@@ -1,6 +1,6 @@
 {
 	"name": "ultimate-planner",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"description": "Create a long-range plan for your action items.",
 	"main": "main.js",
 	"scripts": {
