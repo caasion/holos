@@ -15,6 +15,7 @@
 
 	let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
+	let skipBlur = $state<boolean>(false);
 
 	function startEdit() {
 		isEditing = true;
@@ -24,6 +25,7 @@
 	function cancelEdit() {
 		isEditing = false;
 		editText = "";
+		skipBlur = false;
 	}
 
 	function saveEdit() {
@@ -59,6 +61,9 @@
 			duration = parseInt(rawDuration);
 			timeUnit = units.startsWith('h') ? 'hr' : 'min';
 			textWithoutTaskDuration = textWithoutTaskDuration.replace(fullMatch, '').trim();
+		if (skipBlur) {
+			skipBlur = false;
+			return;
 		}
 
 		// Parse the text for starting time info: "Task @ 10:00"
@@ -92,9 +97,11 @@
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			saveEdit();
+			skipBlur = true;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			cancelEdit();
+			skipBlur = true;
 		}
 	}
 
