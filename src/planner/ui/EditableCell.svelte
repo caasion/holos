@@ -76,6 +76,39 @@
 		}
 	}
 
+	function cancelTask(index: number) {
+		const updatedItems = [...itemData.items];
+		const element = updatedItems[index];
+		
+		if (element.isTask) {
+			const newTaskStatus = '-';
+			
+			// Reconstruct raw text with new task status
+			const raw = reconstructRawText(
+				element.text,
+				element.isTask,
+				newTaskStatus,
+				element.startTime,
+				element.progress,
+				element.duration,
+				element.timeUnit
+			);
+			
+			updatedItems[index] = {
+				...element,
+				taskStatus: newTaskStatus,
+				raw
+			};
+
+			const updatedData: ItemData = {
+				...itemData,
+				items: updatedItems
+			};
+
+			onUpdate(date, itemMeta.id, updatedData);
+		}
+	}
+
 	function deleteElement(index: number) {
 		const updatedItems = itemData.items.filter((_, i) => i !== index);
 		
@@ -172,6 +205,7 @@
         onUpdate={updateElement}
         onDelete={deleteElement}
         onToggle={toggleTask}
+				onCancel={cancelTask}
       />
     </div>
 		

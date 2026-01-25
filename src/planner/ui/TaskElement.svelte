@@ -2,6 +2,7 @@
 	import type { Element, ItemMeta, Time } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
 	import { formatTime } from "src/plugin/helpers";
+	import { longpress } from "src/plugin/actions"
 
 	interface TaskElementProps {
 		element: Element;
@@ -10,13 +11,24 @@
 		onUpdate: (index: number, updatedElement: Element) => void;
 		onDelete: (index: number) => void;
 		onToggle: (index: number) => void;
+		onCancel: (index: number) => void;
 	}
 
-	let { element, index, itemMeta, onUpdate, onDelete, onToggle }: TaskElementProps = $props();
+	let { element, index, itemMeta, onUpdate, onDelete, onToggle, onCancel }: TaskElementProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
 	let skipBlur = $state<boolean>(false);
+	let checkboxRef = $state<HTMLInputElement>();
+
+	// Handle longpress event
+	$effect(() => {
+		if (checkboxRef) {
+			const handler = () => onCancel(index);
+			checkboxRef.addEventListener('longpress', handler);
+			return () => checkboxRef?.removeEventListener('longpress', handler);
+		}
+	});
 
 	function startEdit() {
 		isEditing = true;
@@ -129,9 +141,11 @@
 				/>
 				{:else if element.taskStatus}
 					<input
+						bind:this={checkboxRef}
 						type="checkbox"
 						checked={element.taskStatus == "x"}
 						onchange={toggleTask}
+						use:longpress={1000}
 						class="task-checkbox"
 					/>
 				{/if}
