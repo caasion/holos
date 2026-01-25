@@ -79,11 +79,11 @@ export function swapArrayItems<T>(array: T[], a: number, b: number): T[] {
 /** [PURE HELPER] Takes in an array of Elements, then calculates the sum of the time spent in minutes. */
 export function calculateTotalTimeSpent(items: Element[]): number {
     return items.reduce((total, element) => {
-        if (element.taskProgress !== undefined && element.taskUnit) {
+        if (element.progress !== undefined && element.timeUnit) {
             // Convert everything to minutes for consistent calculation
-            const progressInMinutes = element.taskUnit === 'hr' 
-                ? element.taskProgress * 60 
-                : element.taskProgress;
+            const progressInMinutes = element.timeUnit === 'hr' 
+                ? element.progress * 60 
+                : element.progress;
             return total + progressInMinutes;
         }
         return total;
