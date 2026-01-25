@@ -113,7 +113,7 @@ export class PlannerParser {
 		const startTimeRegex = /@\s*(\d{1,2}):(\d{2})/;
 		const progressDurationRegex = /\[(?:(\d+)?(\/))?(\d+)\s*(hr|min)\]/;
 
-		const taskStatusMatch = line.match(taskStatusRegex);
+		const taskStatusMatch = text.match(taskStatusRegex);
 		if (taskStatusMatch) {
 			const [fullMatch, checkmark] = taskStatusMatch;
 			text = text.replace(fullMatch, '').trim();
@@ -121,14 +121,14 @@ export class PlannerParser {
 			taskStatus = checkmark as typeof taskStatus;
 		}
 
-		const startTimeMatch = line.match(startTimeRegex);
+		const startTimeMatch = text.match(startTimeRegex);
 		if (startTimeMatch) {
 			const [fullMatch, hours, minutes] = startTimeMatch;
 			text = text.replace(fullMatch, '').trim();
 			startTime = { hours: parseInt(hours), minutes: parseInt(minutes) };
 		}
 
-		const progressDurationMatch = line.match(progressDurationRegex);
+		const progressDurationMatch = text.match(progressDurationRegex);
 		if (progressDurationMatch) {
 			const [fullMatch, progressMatch, hasProgress, durationMatch, unitMatch] = progressDurationMatch;
 			text = text.replace(fullMatch, '');
