@@ -27,11 +27,6 @@
 	}
 
 	function saveEdit() {
-		if (editText.trim() === "") {
-			cancelEdit();
-			return;
-		}
-
 		// Parse the text for task duration: [X/Y hr] or [X/Y min] or [X/ hr] or [X hr] or [X min]
 		let textWithoutTaskDuration = editText;
 		let progress: number | undefined;
