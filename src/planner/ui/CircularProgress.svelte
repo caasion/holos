@@ -1,26 +1,25 @@
 <script lang="ts">
 	interface CircularProgressProps {
-		progress: number; // completed time
-		limit?: number; // total time allocated (undefined means no limit)
+		progress?: number; // completed time (optional)
+		duration: number; // total time allocated (required)
 		unit: 'min' | 'hr';
 		size?: number; // size of the circle in pixels
 	}
 
-	let { progress, limit, unit, size = 24 }: CircularProgressProps = $props();
+	let { progress, duration, unit, size = 24 }: CircularProgressProps = $props();
 
-	// Calculate percentage (0-100+)
+	// Calculate percentage (0-100+) when progress is tracked
 	let percentage = $derived.by(() => {
-		if (limit === undefined || limit === 0) {
-			// No limit: always blue
-			return -1; // Special value for no-limit case
+		if (progress === undefined || duration === 0) {
+			return -1; // Special value for no progress tracking
 		}
-		return (progress / limit) * 100;
+		return (progress / duration) * 100;
 	});
 
 	// Determine color based on percentage
 	let color = $derived.by(() => {
 		if (percentage === -1 || percentage >= 100) {
-			return '#4a9eff'; // blue for no-limit or complete/overflow
+			return '#4a9eff'; // blue for no progress tracking or complete/overflow
 		} else if (percentage < 33) {
 			return '#ff4444'; // red
 		} else if (percentage < 66) {
@@ -37,7 +36,7 @@
 	
 	let strokeDashoffset = $derived.by(() => {
 		if (percentage === -1) {
-			// No limit: show as full circle
+			// No progress tracking: show as full circle
 			return 0;
 		}
 		// Cap at 100% visually even if overflowing
@@ -46,10 +45,10 @@
 	});
 
 	let displayText = $derived.by(() => {
-		if (limit === undefined) {
-			return `${progress}`;
+		if (progress === undefined) {
+			return `${duration}`;
 		}
-		return `${progress}/${limit}`;
+		return `${progress}/${duration}`;
 	});
 </script>
 
