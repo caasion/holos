@@ -46,7 +46,7 @@ export class CalendarPipeline {
             IDs.forEach(id => events.push(eventsById[id]));
 
             const labels = this.calHelpers.getEventLabels(events);
-            this.data.setCell(date, id, labels);
+            console.error('populateCells not defined yet')
         })
     }
 

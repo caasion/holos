@@ -3,6 +3,7 @@
 	import EditableCell from "./EditableCell.svelte";
 	import EmptyCell from "./EmptyCell.svelte";
 	import HeaderCell from "./HeaderCell.svelte";
+	import WrapperCell from "./WrapperCell.svelte";
 
     interface Props {
         sortedTemplateDates: Record<TDate, Item[]>;
@@ -31,23 +32,19 @@
         <div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
         {#each {length: rows} as _, row (row)}
             {#each dateTDateMapping as {date, tDate: tDate}, col (col)}
-            {@const {id, meta} = sortedTemplateDates[tDate][row]}
+            {@const {id: itemId, meta: itemMeta} = sortedTemplateDates[tDate]?.[row] ?? {}}
+            {@const itemData = (parsedContent[date] && parsedContent[date][itemId]) ?? undefined}
 
-            {#if row < Object.keys(sortedTemplateDates[tDate]).length && tDate != ""}
-            <div class="cell" style={`background-color: ${meta.color}10;`}>
-                {#if (parsedContent[date] && parsedContent[date][id])}
-                <EditableCell 
-                    date={date}
-                    showLabel={(col == 0 && meta.label !== "") || tDate == date}
-                    itemMeta={meta}
-                    itemId={id}
-                    itemData={parsedContent[date][id]}
-                    onUpdate={handleCellUpdate}
-                />
-                {:else}
-                    <EmptyCell onClick={() => addNewItemToCell(date, id, meta)} label="+ Add" color={meta.color} />
-                {/if}
-            </div>
+            {#if row < (sortedTemplateDates[tDate]?.length ?? 0) && tDate != ""}
+            <WrapperCell 
+                {date}
+                showLabel={(col == 0 && itemMeta.label !== "") || tDate == date}
+                {itemMeta}
+                {itemId}
+                {itemData}
+                onUpdate={handleCellUpdate}
+                onAdd={addNewItemToCell}
+            />
             {:else}
             <div class="cell">-</div>
             {/if}

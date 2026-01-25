@@ -39,6 +39,11 @@ export function getTemplate(tDate: ISODate): Record<ItemID, ItemMeta> {
 /** Returns the ItemID from a specified template given the item label (case insensitive). */
 export function getItemFromLabel(tDate: ISODate, label: string): ItemID {
     const template = getTemplate(tDate);
+    
+    // Guard: if no template exists for this date, return empty string
+    if (!template) {
+        return "";
+    }
 
     for (const item of Object.values(template)) {
         if (label.toLowerCase() == item.label.toLowerCase()) {
