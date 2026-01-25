@@ -1,4 +1,4 @@
-import type { ISODate } from './types';
+import type { ISODate, Time } from './types';
 import { addDays, eachDayOfInterval, endOfWeek, format, parseISO, startOfWeek, type Day } from 'date-fns';
 
 /** Formats a Date into an ISODate. */
@@ -75,3 +75,18 @@ export function swapArrayItems<T>(array: T[], a: number, b: number): T[] {
     [newArray[a], newArray[b]] = [newArray[b], newArray[a]];
     return newArray;
 }
+
+/** [PURE HELPER] Takes in a Time object and returns a well-formatted time string. */
+export function formatTime(time: Time): string {
+    const { hours, minutes } = time;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
+/** [PURE HELPER] Takes progress, duration, and a time unit and returns a well-formatted time string. */
+export function formatProgressDuration(progress: number | undefined, duration: number, unit: 'min' | 'hr'): string {
+    if (progress) {
+        return `[${progress}/${duration} ${unit}]`;
+    } else {
+        return `[${duration} ${unit}]`
+    }
+} 
