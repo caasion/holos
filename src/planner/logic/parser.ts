@@ -49,16 +49,12 @@ export class PlannerParser {
 			
 			// If the line starts with a bullet point with no tab, then start a new item.
 			if (line.match(/^- /)) { 
-                // Push the old element if it exists
+				// Push the old element or item if it exists
 				if (currElement && currItem) currItem.items.push(currElement);
-
-				// Push the old item if it exists
 				if (currItem) itemData[currItem.id] = currItem;
 				
-				// Reset for new item
+				// Prepare for new item: reset & initialize
 				currElement = null;
-				
-				// Initialize the new item
 				let text = line.replace(/^- (\[.\] )?/, '').trim();
 				
 				// Parse time commitment from pattern: Action Item (2 hr|30 mins)
