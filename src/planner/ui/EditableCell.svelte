@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Element, ItemData, ItemID, ISODate, ItemType, ItemMeta } from "src/plugin/types";
 	import TaskElement from "./TaskElement.svelte";
-
+	import { dndzone } from 'svelte-dnd-action';
 
 	interface EditableCellProps {
 		date: ISODate;
@@ -64,6 +64,8 @@
 			isTask: isTask,
 		};
 
+    items = [...items, { id: items.length, element: newElement }]
+
 		const updatedData: ItemData = {
 			...itemData,
 			items: [...itemData.items, newElement]
@@ -71,12 +73,51 @@
 
 		onUpdate(date, itemMeta.id, updatedData);
 	}
+
+  /* Drag and Drop */
+
+  let items = $state<any[]>([]);
+
+  $effect(() => {
+    items = itemData.items.map((element, index) => ({
+      id: index, // Use index as unique ID for dnd
+      element: element
+    }));
+  }) 
+
+  function handleDndConsider(e: { detail: { items: any[]; }; }) {
+    items = e.detail.items;
+  }
+
+  function handleDndFinalize(e: { detail: { items: any[]; }; }) {
+    items = e.detail.items;
+    
+    // Update the actual itemData with the new order
+    const reorderedElements = items.map(item => item.element);
+    const updatedData: ItemData = {
+      ...itemData,
+      items: reorderedElements
+    };
+    
+    onUpdate(date, itemMeta.id, updatedData);
+  }
+
 </script>
 
 <div class="editable-cell">
 	{#if showLabel}
 		<div class="row-label" style={`background-color: ${itemMeta.color}80; color: white;`}>{itemMeta.type == "calendar" ? "📅" : ""} {itemMeta.label}</div>
 	{/if}
+  <div 
+    class="elements-container"
+    use:dndzone={{
+      items,
+      flipDurationMs: 200,
+      dropTargetStyle: { outline: '2px dashed var(--interactive-accent)' }
+    }}
+    onconsider={handleDndConsider}
+    onfinalize={handleDndFinalize}
+  >
 	{#each items as {id, element}, index (id)}
 		<TaskElement 
 			{element}
@@ -87,6 +128,7 @@
 			onToggle={toggleTask}
 		/>
 	{/each}
+  </div>
     <div class="add-btn-container">
         <button class="add-btn" onclick={() => addNewElement(false)}>+ Add Event</button>
         <button class="add-btn" onclick={() => addNewElement(true)}>+ Add Task</button>
