@@ -32,9 +32,6 @@
         
         {#if itemData}
         {@const {dividend: progress, divisor: duration, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
-        <div>
-            
-        </div>
         <div class="progress-circle">
             <CircularProgress
                 {progress}
