@@ -1,7 +1,7 @@
 {
 	"id": "holos",
 	"name": "Holos",
-	"version": "2.2.1",
+	"version": "2.2.2",
 	"minAppVersion": "0.15.0",
 	"description": "Bridge the gap between your calendar and daily planning by creating a long-range plan for what you do everyday.",
 	"author": "caasion",
