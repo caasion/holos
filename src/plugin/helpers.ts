@@ -85,6 +85,11 @@ export function calculateTotalTimeSpent(items: Element[]): number {
                 ? element.progress * 60 
                 : element.progress;
             return total + progressInMinutes;
+        } else if (element.duration) {
+            const durationInMinutes = element.timeUnit === 'hr' 
+                ? element.duration * 60 
+                : element.duration;
+            return total + durationInMinutes;
         }
         return total;
     }, 0);
