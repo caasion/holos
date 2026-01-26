@@ -32,6 +32,9 @@
         
         {#if itemData}
         {@const {dividend: progress, divisor: duration, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
+        <div>
+            
+        </div>
         <div class="progress-circle">
             <CircularProgress
                 {progress}
@@ -39,6 +42,9 @@
                 {unit}
                 size={20}
             />
+            <span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+                {duration} {unit}
+            </span>
         </div>
         {/if}
     </div>
@@ -77,6 +83,17 @@
     }
 
     .progress-circle {
-        grid-column:2
+        grid-column: 2;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
+
+    .time-badge {
+		font-size: 0.85em;
+		background-color: var(--interactive-accent);
+		color: white;
+		padding: 2px 6px;
+		border-radius: 3px;
+	}
 </style>
