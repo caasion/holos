@@ -18,23 +18,32 @@ export class PlannerParser {
 		this.plannerActions = deps.plannerActions;
 	}
 
-    static extractSection(content: string, sectionHeading: string): string {
+    static extractSection(content: string, headerText: string): string {
         const lines = content.split('\n');
-        let sectionLines: string = "";
+        let sectionLines: string[] = [];
         let inSection = false;
+        let currentLevel = 0;
 
         for (const line of lines) {
-            // Check if we hit our target heading
-            if (line.trim() === `## ${sectionHeading}`) {
+            // Detect header of any level
+            const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
+
+            if (!headerMatch) continue;
+
+            const level = headerMatch[1].length;
+            const text = headerMatch[2].trim();
+
+            if (inSection && level <= currentLevel) break;
+
+            if (text === headerText) {
                 inSection = true;
+                currentLevel = level;
                 continue;
             }
-            // If we hit another heading of the same or higher level, stop
-            if (inSection && line.startsWith('##')) break; 
             
-            if (inSection) sectionLines += `\n${line}`;
+            if (inSection) sectionLines.push(line);
         }
-        return sectionLines;
+        return sectionLines.join('\n');
     }
     
     public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
