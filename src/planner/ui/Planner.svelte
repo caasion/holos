@@ -5,7 +5,7 @@
 	import type { PlannerActions } from "src/planner/logic/itemActions";
 	import type { BlockMeta, DataService, DateMapping, HelperService, ISODate, Item, ItemData, ItemDict, ItemID, ItemMeta, PluginSettings, TDate } from "src/plugin/types";
 	import { PlannerParser } from "src/planner/logic/parser";
-	import { DailyNoteService } from "src/planner/logic/reader";
+	import { DailyNoteService } from "src/planner/logic/dailyNote";
 	import FloatBlock from "src/planner/ui/float/FloatBlock.svelte";
 	import TemplateEditor from "src/templates/TemplateEditor.svelte";
 	import EditableCell from "./grid/EditableCell.svelte";
@@ -27,7 +27,7 @@
 		helper: HelperService;
 		plannerActions: PlannerActions;
 		calendarPipeline: CalendarPipeline;
-        parser: PlannerParser;
+		parser: PlannerParser;
 		dailyNoteService: DailyNoteService;
 	}
 

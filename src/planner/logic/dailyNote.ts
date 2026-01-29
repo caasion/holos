@@ -6,6 +6,12 @@ import { Notice } from "obsidian";
 import { PlannerParser } from "./parser";
 import { writable, type Writable } from "svelte/store";
 
+export interface DailyNoteServiceDeps {
+    app: App;
+    settings: PluginSettings;
+    parser: PlannerParser;
+}
+
 export class DailyNoteService {
     private app: App;
     private settings: PluginSettings;
@@ -26,10 +32,10 @@ export class DailyNoteService {
     // Current dates being watched
     private watchedDates: ISODate[] = [];
 
-    constructor(app: App, settings: PluginSettings, parser: PlannerParser) {
-        this.app = app;
-        this.settings = settings;
-        this.parser = parser;
+    constructor(deps: DailyNoteServiceDeps) {
+        this.app = deps.app;
+        this.settings = deps.settings;
+        this.parser = deps.parser;
     }
 
     /** Get the contents of a daily note file */

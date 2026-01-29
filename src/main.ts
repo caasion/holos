@@ -12,7 +12,7 @@ import { parseICS, parseICSBetween, normalizeEvent, normalizeOccurrenceEvent, bu
 import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
 import { PlannerParser } from './planner/logic/parser';
-import { DailyNoteService } from './planner/logic/reader';
+import { DailyNoteService } from './planner/logic/dailyNote';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
@@ -26,7 +26,6 @@ export default class HolosPlugin extends Plugin {
 	public calendarPipeline: CalendarPipeline;
 	public parserService: PlannerParser;
 	public dailyNoteService: DailyNoteService;
-
 
 	async onload() {
 		await this.loadPersisted();
@@ -93,11 +92,11 @@ export default class HolosPlugin extends Plugin {
 			plannerActions: this.plannerActions,
 		})
 
-		this.dailyNoteService = new DailyNoteService(
-			this.app,
-			this.settings,
-			this.parserService
-		)
+		this.dailyNoteService = new DailyNoteService({
+			app: this.app,
+			settings: this.settings,
+			parser: this.parserService
+		})
 
 		// Add Settings Tab using Obsidian's API
 		this.addSettingTab(new HolosSettingsTab(this.app, this));
