@@ -45,6 +45,38 @@ export class PlannerParser {
         }
         return sectionLines.join('\n');
     }
+
+    static parseJournalSection(section: string): Record<string, string> {
+        const lines = section.split('\n');
+        const journalData: Record<string, string> = {};
+        let currJournal: string | null = null;
+        let currJournalData: string[] = [];
+
+        for (const line of lines) {
+            // Skip empty lines or lines that aren't bullet points
+			if (!line || !line.match(/^\t*- /)) continue;
+
+            if (line.match(/^- /)) {
+                if (currJournal && currJournalData) journalData[currJournal] = currJournalData.join('\n');
+                if (currJournal && !currJournalData) journalData[currJournal] = "";
+
+                currJournal = null;
+                currJournalData = [];
+                
+                let text = line.replace(/^- /, '').trim();
+                currJournal = text;
+            } else if (line.match(/^\t+- /)) {
+                if (!currJournal) continue;
+
+                let text = line.replace(/^\t- /, '').trim();
+                currJournalData.push(text);
+            }
+        }
+
+        if (currJournal) journalData[currJournal] = currJournalData.join('\n');
+
+        return journalData;
+    }
     
     public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
 	    const lines = section.split('\n');
