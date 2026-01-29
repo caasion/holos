@@ -59,17 +59,11 @@ export class DailyNoteService {
                 return;
             }
             
-            // Read current content
             const currentContent = await this.app.vault.read(dailyNoteFile);
-            
-            // Serialize the new section
             const newSection = this.parser.serializeSection(date, items);
-            
-            // Replace the section
             const updatedContent = PlannerParser.replaceSection(currentContent, this.settings.sectionHeading, newSection);
             
-            // Write back to file
-            await this.app.vault.modify(dailyNoteFile, updatedContent);
+            await this.app.vault.modify(dailyNoteFile, updatedContent); // Write back to file
             
             console.log(`Updated planner section for ${date}`);
         } catch (error) {
@@ -90,7 +84,7 @@ export class DailyNoteService {
         
         this.writeTimer = setTimeout(() => {
             this.writeDailyNote(date, items);
-        }, 500); // Wait 500ms after last edit
+        }, 500);
     }
 
     /** Load and parse content from a daily note */
@@ -108,9 +102,23 @@ export class DailyNoteService {
         return parsed;
     }
 
+    /** Load and parse journal content from a daily note */
+    async loadJournalContent(date: ISODate): Promise<Record<string, string>> {
+        const dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
+        const contents = await this.getDailyNoteContents(dailyNoteFile);
+        
+        if (!contents) {
+            return {};
+        }
+
+        const extracted = PlannerParser.extractSection(contents, "📔 Logs");
+        const parsed = PlannerParser.parseJournalSection(extracted);
+
+        return parsed;
+    }
+
     /** Load content for multiple dates */
     async loadMultipleDates(dates: ISODate[]): Promise<void> {
-        // Skip reading if we're currently writing
         if (this.isWriting) return;
         
         const result: Record<ISODate, Record<ItemID, ItemData>> = {};
@@ -187,14 +195,12 @@ export class DailyNoteService {
         let dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
         
         if (!dailyNoteFile) {
-            // Create daily note
             new Notice("Daily note doesn't exist. Creating it now...");
             
             try {
                 await createDailyNote(moment(date));
                 new Notice("Daily note created!");
                 
-                // Get the newly created file
                 dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
             } catch (error) {
                 new Notice("Failed to create daily note");
@@ -203,7 +209,6 @@ export class DailyNoteService {
             }
         }
         
-        // Create empty item with one element
         const newItemData: ItemData = {
             id: itemId,
             time: timeCommitment ?? 0,
