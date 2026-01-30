@@ -25,6 +25,7 @@ export class DailyNoteService {
     
     // Store for parsed content
     public parsedContent: Writable<Record<ISODate, Record<ItemID, ItemData>>> = writable({});
+    public parsedJournalContent: Writable<Record<ISODate, Record<string, string>>> = writable({});
     
     // File watcher reference
     private fileModifyRef: EventRef | null = null;
@@ -122,14 +123,17 @@ export class DailyNoteService {
         if (this.isWriting) return;
         
         const result: Record<ISODate, Record<ItemID, ItemData>> = {};
+        const journalResult: Record<ISODate, Record<string, string>> = {};
         
         await Promise.all(
             dates.map(async (date) => {
                 result[date] = await this.loadDailyNoteContent(date);
+                journalResult[date] = await this.loadJournalContent(date);
             })
         );
         
         this.parsedContent.set(result);
+        this.parsedJournalContent.set(journalResult);
     }
 
     /** Setup file watching for external changes */

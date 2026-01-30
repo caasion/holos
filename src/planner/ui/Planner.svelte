@@ -59,8 +59,10 @@
 
 	// Get parsed content from the service store
 	const parsedContentStore = dailyNoteService.parsedContent;
+	const parsedJournalContentStore = dailyNoteService.parsedJournalContent;
 
 	let parsedContent = $derived<Record<ISODate, Record<ItemID, ItemData>>>($parsedContentStore);
+	let parsedJournalContent = $derived<Record<ISODate, Record<string, string>>>($parsedJournalContentStore)
 	
 	// Load daily note content when dates change
 	$effect(() => {
@@ -129,6 +131,7 @@
 	{blocksMeta}
 	{columns}
 	{parsedContent}
+	{parsedJournalContent}
 	{handleCellUpdate}
 	{addNewItemToCell}
 	{openDailyNote}

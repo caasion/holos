@@ -10,12 +10,13 @@
         blocksMeta: BlockMeta[];
         columns: number;
         parsedContent: Record<ISODate, Record<ItemID, ItemData>>;
+        parsedJournalContent: Record<ISODate, Record<string, string>>;
         handleCellUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
         addNewItemToCell: (date: ISODate, itemId: ItemID, itemMeta: ItemMeta) => void;
         openDailyNote: (date: ISODate) => void;
     }
 
-    let { sortedTemplateDates, blocksMeta, columns, parsedContent, handleCellUpdate, addNewItemToCell, openDailyNote }: Props = $props();    
+    let { sortedTemplateDates, blocksMeta, columns, parsedContent, parsedJournalContent, handleCellUpdate, addNewItemToCell, openDailyNote }: Props = $props();    
 </script>
 
 <div class="main-grid-container">
@@ -34,6 +35,8 @@
             {#each dateTDateMapping as {date, tDate: tDate}, col (col)}
             {@const {id: itemId, meta: itemMeta} = sortedTemplateDates[tDate]?.[row] ?? {}}
             {@const itemData = (parsedContent[date] && parsedContent[date][itemId]) ?? undefined}
+            {@const journalHeader = itemMeta.innerMeta.journalHeader}
+            {@const journalData = (parsedJournalContent[date] && parsedJournalContent[date][journalHeader]) ?? undefined}
 
             {#if row < (sortedTemplateDates[tDate]?.length ?? 0) && tDate != ""}
             <WrapperCell 
@@ -42,6 +45,7 @@
                 {itemMeta}
                 {itemId}
                 {itemData}
+                {journalData}
                 onUpdate={handleCellUpdate}
                 onAdd={addNewItemToCell}
             />
