@@ -28,17 +28,17 @@ export class PlannerParser {
             // Detect header of any level
             const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
 
-            if (!headerMatch) continue;
+            if (headerMatch) {
+                const level = headerMatch[1].length;
+                const text = headerMatch[2].trim();
 
-            const level = headerMatch[1].length;
-            const text = headerMatch[2].trim();
+                if (inSection && level <= currentLevel) break;
 
-            if (inSection && level <= currentLevel) break;
-
-            if (text === headerText) {
-                inSection = true;
-                currentLevel = level;
-                continue;
+                if (text === headerText) {
+                    inSection = true;
+                    currentLevel = level;
+                    continue;
+                }
             }
             
             if (inSection) sectionLines.push(line);
