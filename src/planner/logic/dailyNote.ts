@@ -6,6 +6,12 @@ import { Notice } from "obsidian";
 import { PlannerParser } from "./parser";
 import { writable, type Writable } from "svelte/store";
 
+export interface DailyNoteServiceDeps {
+    app: App;
+    settings: PluginSettings;
+    parser: PlannerParser;
+}
+
 export class DailyNoteService {
     private app: App;
     private settings: PluginSettings;
@@ -19,6 +25,7 @@ export class DailyNoteService {
     
     // Store for parsed content
     public parsedContent: Writable<Record<ISODate, Record<ItemID, ItemData>>> = writable({});
+    public parsedJournalContent: Writable<Record<ISODate, Record<string, string>>> = writable({});
     
     // File watcher reference
     private fileModifyRef: EventRef | null = null;
@@ -26,10 +33,10 @@ export class DailyNoteService {
     // Current dates being watched
     private watchedDates: ISODate[] = [];
 
-    constructor(app: App, settings: PluginSettings, parser: PlannerParser) {
-        this.app = app;
-        this.settings = settings;
-        this.parser = parser;
+    constructor(deps: DailyNoteServiceDeps) {
+        this.app = deps.app;
+        this.settings = deps.settings;
+        this.parser = deps.parser;
     }
 
     /** Get the contents of a daily note file */
@@ -53,17 +60,11 @@ export class DailyNoteService {
                 return;
             }
             
-            // Read current content
             const currentContent = await this.app.vault.read(dailyNoteFile);
-            
-            // Serialize the new section
             const newSection = this.parser.serializeSection(date, items);
-            
-            // Replace the section
             const updatedContent = PlannerParser.replaceSection(currentContent, this.settings.sectionHeading, newSection);
             
-            // Write back to file
-            await this.app.vault.modify(dailyNoteFile, updatedContent);
+            await this.app.vault.modify(dailyNoteFile, updatedContent); // Write back to file
             
             console.log(`Updated planner section for ${date}`);
         } catch (error) {
@@ -84,7 +85,7 @@ export class DailyNoteService {
         
         this.writeTimer = setTimeout(() => {
             this.writeDailyNote(date, items);
-        }, 500); // Wait 500ms after last edit
+        }, 500);
     }
 
     /** Load and parse content from a daily note */
@@ -102,20 +103,37 @@ export class DailyNoteService {
         return parsed;
     }
 
+    /** Load and parse journal content from a daily note */
+    async loadJournalContent(date: ISODate): Promise<Record<string, string>> {
+        const dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
+        const contents = await this.getDailyNoteContents(dailyNoteFile);
+        
+        if (!contents) {
+            return {};
+        }
+
+        const extracted = PlannerParser.extractSection(contents, "📔 Logs");
+        const parsed = PlannerParser.parseJournalSection(extracted);
+
+        return parsed;
+    }
+
     /** Load content for multiple dates */
     async loadMultipleDates(dates: ISODate[]): Promise<void> {
-        // Skip reading if we're currently writing
         if (this.isWriting) return;
         
         const result: Record<ISODate, Record<ItemID, ItemData>> = {};
+        const journalResult: Record<ISODate, Record<string, string>> = {};
         
         await Promise.all(
             dates.map(async (date) => {
                 result[date] = await this.loadDailyNoteContent(date);
+                journalResult[date] = await this.loadJournalContent(date);
             })
         );
         
         this.parsedContent.set(result);
+        this.parsedJournalContent.set(journalResult);
     }
 
     /** Setup file watching for external changes */
@@ -181,14 +199,12 @@ export class DailyNoteService {
         let dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
         
         if (!dailyNoteFile) {
-            // Create daily note
             new Notice("Daily note doesn't exist. Creating it now...");
             
             try {
                 await createDailyNote(moment(date));
                 new Notice("Daily note created!");
                 
-                // Get the newly created file
                 dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
             } catch (error) {
                 new Notice("Failed to create daily note");
@@ -197,7 +213,6 @@ export class DailyNoteService {
             }
         }
         
-        // Create empty item with one element
         const newItemData: ItemData = {
             id: itemId,
             time: timeCommitment ?? 0,

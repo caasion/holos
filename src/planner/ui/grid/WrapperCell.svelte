@@ -11,11 +11,12 @@
         itemMeta: ItemMeta;
         itemId: ItemID;
         itemData: ItemData | undefined;
+        journalData: string | undefined;
         onUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
         onAdd: (date: ISODate, itemId: ItemID, itemMeta: ItemMeta) => void;
     }
     
-    let {date, showLabel, itemMeta, itemId, itemData, onUpdate, onAdd}: Props = $props();
+    let {date, showLabel, itemMeta, itemId, itemData, journalData, onUpdate, onAdd}: Props = $props();
     
     const totalTimeSpent = $derived(itemData ? calculateTotalTimeSpent(itemData.items) : 0);
 
@@ -30,20 +31,29 @@
             </div>
         {/if}
         
-        {#if itemData}
-        {@const {dividend: progress, divisor: duration, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
-        <div class="progress-circle">
-            <CircularProgress
-                {progress}
-                {duration}
-                {unit}
-                size={20}
-            />
-            <span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
-                {duration} {unit}
-            </span>
+        
+        <div class="item-data-container"> 
+            {#if journalData}
+            <div class="journal-indicator">
+                <span class="journal-icon" title={journalData}>📜</span>
+            </div>
+            {/if}
+            {#if itemData}
+            {@const {dividend: progress, divisor: duration, unit} = formatTimeArguments(totalTimeSpent, totalTimeCommitment)}
+            <div class="progress-circle">
+                <CircularProgress
+                    {progress}
+                    {duration}
+                    {unit}
+                    size={20}
+                />
+                <span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+                    {duration} {unit}
+                </span>
+            </div>
+            {/if}
         </div>
-        {/if}
+        
     </div>
 
 {#if itemData}
@@ -79,8 +89,14 @@
         width: 100%;
     }
 
-    .progress-circle {
+    .item-data-container {
         grid-column: 2;
+        display: flex;
+        align-items: center;
+        gap: px;
+    }
+
+    .progress-circle {
         display: flex;
         align-items: center;
         gap: 6px;

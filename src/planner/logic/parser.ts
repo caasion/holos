@@ -18,23 +18,64 @@ export class PlannerParser {
 		this.plannerActions = deps.plannerActions;
 	}
 
-    static extractSection(content: string, sectionHeading: string): string {
+    static extractSection(content: string, headerText: string): string {
         const lines = content.split('\n');
-        let sectionLines: string = "";
+        let sectionLines: string[] = [];
         let inSection = false;
+        let currentLevel = 0;
 
         for (const line of lines) {
-            // Check if we hit our target heading
-            if (line.trim() === `## ${sectionHeading}`) {
-                inSection = true;
-                continue;
+            // Detect header of any level
+            const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
+
+            if (headerMatch) {
+                const level = headerMatch[1].length;
+                const text = headerMatch[2].trim();
+
+                if (inSection && level <= currentLevel) break;
+
+                if (text === headerText) {
+                    inSection = true;
+                    currentLevel = level;
+                    continue;
+                }
             }
-            // If we hit another heading of the same or higher level, stop
-            if (inSection && line.startsWith('##')) break; 
             
-            if (inSection) sectionLines += `\n${line}`;
+            if (inSection) sectionLines.push(line);
         }
-        return sectionLines;
+        return sectionLines.join('\n');
+    }
+
+    static parseJournalSection(section: string): Record<string, string> {
+        const lines = section.split('\n');
+        const journalData: Record<string, string> = {};
+        let currJournal: string | null = null;
+        let currJournalData: string[] = [];
+
+        for (const line of lines) {
+            // Skip empty lines or lines that aren't bullet points
+			if (!line || !line.match(/^\t*- /)) continue;
+
+            if (line.match(/^- /)) {
+                if (currJournal && currJournalData) journalData[currJournal] = currJournalData.join('\n');
+                if (currJournal && !currJournalData) journalData[currJournal] = "";
+
+                currJournal = null;
+                currJournalData = [];
+                
+                let text = line.replace(/^- /, '').trim();
+                currJournal = text;
+            } else if (line.match(/^\t+- /)) {
+                if (!currJournal) continue;
+
+                let text = line.replace(/^\t- /, '').trim();
+                currJournalData.push(text);
+            }
+        }
+
+        if (currJournal) journalData[currJournal] = currJournalData.join('\n');
+
+        return journalData;
     }
     
     public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {

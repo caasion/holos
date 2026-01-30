@@ -62,7 +62,7 @@ export class GenericEditModal extends Modal {
             .setName("Journal Header")
             .setDesc(descFragment)
             .addText(t => {
-                t.setValue("")
+                t.setValue(meta.innerMeta.journalHeader)
                 t.onChange(v => meta.innerMeta.journalHeader = v)
             })
 
