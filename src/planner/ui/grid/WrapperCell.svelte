@@ -35,7 +35,7 @@
         <div class="item-data-container"> 
             {#if journalData}
             <div class="journal-indicator">
-                <span class="journal-icon">📜</span>
+                <span class="journal-icon" title={journalData}>📜</span>
             </div>
             {/if}
             {#if itemData}
