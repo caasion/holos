@@ -3,6 +3,7 @@ import process from "process";
 import builtins from "builtin-modules";
 import sveltePlugin from "esbuild-svelte";
 import { sveltePreprocess } from 'svelte-preprocess';
+import fs from "fs"; // Added fs import
 
 const banner =
 `/*
@@ -12,6 +13,19 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
+
+// Custom plugin to rename main.css -> styles.css
+const moveStyles = {
+	name: 'move-styles',
+	setup(build) {
+		build.onEnd(() => {
+			if (fs.existsSync('main.css')) {
+				fs.renameSync('main.css', 'styles.css');
+				console.log('Moved main.css to styles.css');
+			}
+		});
+	},
+};
 
 const context = await esbuild.context({
 	banner: {
@@ -35,16 +49,19 @@ const context = await esbuild.context({
 		"@lezer/lr",
 		...builtins],
 	format: "cjs",
-	plugins: [sveltePlugin({
-		compilerOptions: {
-			dev: true,
-			css: 'injected',
-			runes: true,
-		},
-		preprocess: sveltePreprocess({
-			typescript: true
+	plugins: [
+		sveltePlugin({
+			compilerOptions: {
+				dev: true,
+				css: 'external',
+				runes: true,
+			},
+			preprocess: sveltePreprocess({
+				typescript: true
+			}),
 		}),
-	})],
+		moveStyles
+	],
 	target: "es2018",
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
