@@ -1,6 +1,6 @@
-import type { ISODate, DataService, HelperService, ItemMeta, CalendarMeta, ItemID, PluginSettings } from '../../plugin/types';
+import type { ISODate, DataService, HelperService, ItemMeta, CalendarMeta, ItemID, PluginSettings } from '../plugin/types';
 import { get } from 'svelte/store';
-import { CalendarPipeline } from '../../calendar/calendarPipelines';
+import { CalendarPipeline } from '../calendar/calendarPipelines';
 import { addDays, parseISO, startOfDay } from 'date-fns';
 import { Menu, Notice, type App } from 'obsidian';
 import { NewItemModal } from 'src/templates/NewItemModal';

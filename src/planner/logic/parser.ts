@@ -1,6 +1,6 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
-import type { PlannerActions } from "src/planner/logic/itemActions";
+import type { PlannerActions } from "src/tracks/trackActions";
 import { formatProgressDuration, formatTime } from "src/plugin/helpers";
 import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
 
