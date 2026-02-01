@@ -27,6 +27,27 @@ const moveStyles = {
 	},
 };
 
+const ignorePlugin = (patterns) => ({
+    name: 'ignore-plugin',
+    setup(build) {
+        build.onResolve({ filter: /.*/ }, args => {
+            // Check if the import path contains any of our ignored patterns
+            for (const pattern of patterns) {
+                if (args.path.includes(pattern)) {
+                    console.log(`🙈 Ignoring broken import: ${args.path}`);
+                    return { path: args.path, namespace: 'ignore-stub' };
+                }
+            }
+        });
+
+        // Return an empty object for ignored files
+        build.onLoad({ filter: /.*/, namespace: 'ignore-stub' }, () => ({
+            contents: 'export default {};', 
+            loader: 'js'
+        }));
+    }
+});
+
 const context = await esbuild.context({
 	banner: {
 		js: banner,
@@ -60,7 +81,7 @@ const context = await esbuild.context({
 				typescript: true
 			}),
 		}),
-		moveStyles
+		moveStyles,
 	],
 	target: "es2018",
 	logLevel: "info",
