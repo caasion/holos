@@ -10,10 +10,9 @@
         app: App;
         templatesAct: TemplateActions;
         trackAct: TrackActions;
-        helper: HelperService;
     }
 
-    let { app, templatesAct, trackAct, helper }: ViewProps = $props();
+    let { app, templatesAct, trackAct }: ViewProps = $props();
 
     let selectedTemplate = $state<ISODate>(templatesAct.getTemplateDate(getISODate(new Date())) ?? "");
 
@@ -81,7 +80,7 @@
             {:else}
             <button onclick={(e) => {
                 trackAct.handleNewTrack(app, selectedTemplate);
-                selectedTemplate = templatesAct.getTemplateDate(helper.getISODate(new Date()));
+                selectedTemplate = templatesAct.getTemplateDate(getISODate(new Date()));
                 }}>+ Add</button>
             {/if}
             
