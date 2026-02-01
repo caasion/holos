@@ -7,6 +7,7 @@ import { NewItemModal } from 'src/templates/NewItemModal';
 import { GenericEditModal } from 'src/templates/EditItemModal';
 import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
 import type { TemplateActions } from 'src/templates/templateActions';
+import { generateID } from 'src/plugin/helpers';
 
 export interface TrackActionsDeps {
     settings: PluginSettings;
@@ -55,6 +56,15 @@ export class TrackActions {
     }
 
     // ===== Creating tracks ===== // 
+    
+    /** Handles the creation of a new track (modal and creation). */
+    public handleNewTrack(app: App, tDate: ISODate) {
+        const nextOrder = Object.values(this.templates.getTemplate(tDate) || {}).length;
+        new NewItemModal(app, nextOrder, tDate, (meta: Track) => {
+            const id = generateID("track-");
+            this.templates.addTrackToTemplate(tDate, id, meta);
+        }).open();
+    }
     
     // ===== Modifying tracks ===== //
 
