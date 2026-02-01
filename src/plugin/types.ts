@@ -2,7 +2,7 @@ import type { Day } from "date-fns";
 import type { Writable } from "svelte/store";
 import ICAL from "ical.js";
 import type { occurrenceDetails } from "ical.js/dist/types/types";
-import type { App, RequestUrlResponse, RequestUrlResponsePromise } from "obsidian";
+import type { RequestUrlResponse } from "obsidian";
 
 /* Plugin Data Types */
 export type ISODate = string; // Create date type for dates in ISO 8601 for simplification (not as heavy as a Date object)
@@ -41,37 +41,28 @@ export interface ItemData {
 	items: Element[];
 }
 
-/* Plugin Template Datatypes */
-export type ActionItemID = string;
-export type CalendarID = string;
-export type ItemID = ActionItemID | CalendarID;
-export type ItemMeta = ActionItemMeta | CalendarMeta;
-export type ItemType = "action" | "calendar";
-
-export interface ItemInnerMeta {
-    timeCommitment: number; 
-    habits: string[];
-    journalHeader: string;
+/* NEW Plugin Template Datatypes */
+interface Habit {
+	id: string;
+	label: string;
+	rrule: string;
 }
 
-export interface ActionItemMeta {
-    id: ActionItemID;
-    type: "action";
-    order: number;
-    label: string;
-    color: string;
-    floatCell: string;
-    innerMeta: ItemInnerMeta;
+interface RDateInterval {
+	startDate: ISODate;
+	endDate: ISODate
+	rrule?: string;
+}
+
+export interface Project {
+	id: string
+	label: string;
+	active: RDateInterval[]; // Project can be on and off
+	data: Element[];
+	habits: Habit[]; // can be empty
 }
 
 export interface CalendarMeta {
-    id: CalendarID;
-    type: "calendar";
-    order: number;
-    label: string;
-    color: string;
-    floatCell: string;
-    innerMeta: ItemInnerMeta;
     url: string;
     etag?: string;
     lastFetched?: number;
@@ -79,11 +70,30 @@ export interface CalendarMeta {
     contentHash?: string;
 }
 
+export interface Track {
+    id: string;
+    
+    // Track meta
+    order: number;
+    label: string;
+    color: string;
+    // calendar: CalendarMeta;
+    
+    // Additional data
+    timeCommitment: number; // in hours
+	journalHeader: string;
+	habits: Habit[];
+	
+    // Projects
+    activeProject: Project;
+}
+
+/* Plugin Template Datatypes */
 export type TDate = ISODate;
-export type ItemDict = Record<ItemID, ItemMeta>;
 
 export interface PlannerState {
     templates: Record<TDate, ItemDict>;
+    tracks: Record<TDate, Record<string, Track>>;
 }
 
 /* Planner Table Rendering */
