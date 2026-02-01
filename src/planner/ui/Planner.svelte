@@ -2,7 +2,8 @@
 	import { format, parseISO } from "date-fns";
 	import type { App } from "obsidian";
 	import type { CalendarPipeline } from "src/calendar/calendarPipelines";
-	import type { PlannerActions } from "src/planner/logic/itemActions";
+	import type { TrackActions } from "src/tracks/trackActions";
+	import type { TemplateActions } from "src/templates/templateActions";
 	import type { BlockMeta, DataService, DateMapping, HelperService, ISODate, Item, ItemData, ItemDict, ItemID, ItemMeta, PluginSettings, TDate } from "src/plugin/types";
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { DailyNoteService } from "src/planner/logic/dailyNote";
@@ -25,13 +26,14 @@
 		settings: PluginSettings;
 		data: DataService;
 		helper: HelperService;
-		plannerActions: PlannerActions;
+		templateActions: TemplateActions;
+		trackActions: TrackActions;
 		calendarPipeline: CalendarPipeline;
 		parser: PlannerParser;
 		dailyNoteService: DailyNoteService;
 	}
 
-	let { app, settings, data, helper, plannerActions, calendarPipeline, parser, dailyNoteService }: ViewProps = $props();
+	let { app, settings, data, helper, templateActions, trackActions, calendarPipeline, parser, dailyNoteService }: ViewProps = $props();
 
 	
 	/* === View Rendering === */
@@ -49,7 +51,7 @@
 	let dates = $derived<ISODate[]>(weekFormat ? getISODates(anchor, blocks, weekStartOn) : getISODates(anchor, columns * blocks))
 
 	// Create a dictionary of each date mapped to its respective template date
-	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, plannerActions));
+	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, templateActions));
 
 	// Convert a template into a sorted array of items
 	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, $templates));
@@ -116,13 +118,13 @@
 
 {#if inTemplateEditor}
 
-<TemplateEditor {app} {plannerActions} {helper} />
+<TemplateEditor {app} templateActions={templateActions} trackActions={trackActions} {helper} />
 
 {:else}
 
 <FloatBlock 
 	templates={sortedTemplateDates} 
-	contextMenu={(e: MouseEvent, tDate: ISODate, id: ItemID, meta: ItemMeta) => plannerActions.openItemMenu(app, e, tDate, id, meta)} 
+	contextMenu={(e: MouseEvent, tDate: ISODate, id: ItemID, meta: ItemMeta) => trackActions.openTrackMenu(app, e, tDate, id, meta)} 
 	focusCell={(opt: boolean) => { return false }}
 />  
 
