@@ -92,8 +92,7 @@ export interface Track {
 export type TDate = ISODate;
 
 export interface PlannerState {
-    templates: Record<TDate, ItemDict>;
-    tracks: Record<TDate, Record<string, Track>>;
+    templates: Record<TDate, Record<string, Track>>;
 }
 
 /* Planner Table Rendering */
