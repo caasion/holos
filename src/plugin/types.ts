@@ -88,11 +88,22 @@ export interface Track {
     activeProject: Project;
 }
 
+
+
 /* Plugin Template Datatypes */
 export type TDate = ISODate;
 
+interface Template {
+  id: string;
+  name: string;
+  effectiveFrom: ISODate; 
+  tracks: Record<string, Track>; // <--- The "Whole Set"
+}
+
+export type Templates = Record<TDate, Template>;
+
 export interface PlannerState {
-    templates: Record<TDate, Record<string, Track>>;
+    templates: Templates;
 }
 
 /* Planner Table Rendering */
@@ -160,19 +171,6 @@ export interface DataService {
     templates: Writable<Record<ISODate, Record<ItemID, ItemMeta>>>;
     calendarState: Writable<CalendarState>;
     fetchToken: Writable<number>;
-
-    // Planner Store Actions (matches exports from plannerStore.ts)
-    setTemplate: (tDate: ISODate, newTemplate: Record<ItemID, ItemMeta>) => void;
-    addToTemplate: (tDate: ISODate, id: ItemID, meta: ItemMeta) => boolean;
-    getTemplate: (tDate: ISODate) => Record<ItemID, ItemMeta>;
-    getItemFromLabel: (tDate: ISODate, label: string) => ItemID;
-    removeFromTemplate: (tDate: ISODate, id: ItemID) => boolean;
-    removeFromCellsInTemplate: (tDate: ISODate, id: ItemID) => boolean;
-    removeTemplate: (tDate: ISODate) => boolean;
-    getItemMeta: (tDate: ISODate, id: ItemID) => ItemMeta;
-    updateItemMeta: (tDate: ISODate, id: ItemID, updates: Partial<ItemMeta>) => boolean;
-    setFloatCell: (tDate: ISODate, id: ItemID, value: string) => boolean;
-    getFloatCell: (tDate: ISODate, id: ItemID) => string;
 }
 
 // Core Helper Service Contract (Pure Functions from helper.ts)
