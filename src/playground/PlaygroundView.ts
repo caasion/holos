@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
 import HolosPlugin from '../main';
 import PlaygroundNew from "./PlaygroundNew.svelte";
+import TemplateEditor from "src/templates/Templates.svelte";
 
 export const PLAYGROUND_VIEW_TYPE = "playground-view"
 
@@ -25,8 +26,8 @@ export class PlaygroundView extends ItemView {
         const container = this.contentEl;
 		container.empty();
                 
-        mount(PlaygroundNew, {target: container, props: {
-             app: this.plugin.app,
+        mount(TemplateEditor, {target: container, props: {
+            app: this.plugin.app,
             settings: this.plugin.settings,
             data: this.plugin.dataService,
             helper: this.plugin.helperService,

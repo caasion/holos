@@ -7,7 +7,7 @@
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { DailyNoteService } from "src/planner/logic/dailyNote";
 	import FloatBlock from "src/planner/ui/float/FloatBlock.svelte";
-	import TemplateEditor from "src/templates/TemplateEditor.svelte";
+	import TemplateEditor from "src/templates/Templates.svelte";
 	import EditableCell from "./grid/EditableCell.svelte";
 	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
 	import DebugBlock from "src/playground/DebugBlock.svelte";
