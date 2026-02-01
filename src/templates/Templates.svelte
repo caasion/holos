@@ -1,21 +1,24 @@
 <script lang="ts">
 	import { type App } from "obsidian";
-	import { PlannerActions } from "src/planner/logic/itemActions";
 	import { sortedTemplateDates, templates } from "src/templates/templatesStore";
 	import type { HelperService, ISODate } from "src/plugin/types";
+	import { getISODate } from "src/plugin/helpers";
+	import type { TemplateActions } from "./templateActions";
+	import type { TrackActions } from "src/tracks/trackActions";
 
     interface ViewProps {
         app: App;
-        plannerActions: PlannerActions;
+        templatesAct: TemplateActions;
+        trackAct: TrackActions;
         helper: HelperService;
     }
 
-    let { app, plannerActions, helper }: ViewProps = $props();
+    let { app, templatesAct, trackAct, helper }: ViewProps = $props();
 
-    let selectedTemplate = $state<ISODate>(plannerActions.getTemplateDate(helper.getISODate(new Date()) ?? ""));
+    let selectedTemplate = $state<ISODate>(templatesAct.getTemplateDate(getISODate(new Date())) ?? "");
 
     function handleNewTemplate() {
-        plannerActions.handleNewTemplate(app);
+        templatesAct.handleNewTemplate(app);
     }
 
 </script>
@@ -40,7 +43,7 @@
                     </div>
                     <div>
                         <button
-                            onclick={() => plannerActions.handleRemoveTemplate(app, tDate)}
+                            onclick={() => templatesAct.handleRemoveTemplate(app, tDate)}
                         >
                             ×
                         </button>
@@ -62,23 +65,23 @@
                     role="button"
                     tabindex="0"
                     style="color: {meta.color};"
-                    onclick={(e: MouseEvent) => plannerActions.openItemMenu(app, e, selectedTemplate, id, meta)}
+                    onclick={(e: MouseEvent) => trackAct.openTrackMenu(app, e, selectedTemplate, id, meta)}
                     onkeydown={(e) => (e.key === 'Enter' || e.key === ' ')}
                 >
                     {meta.label}
                 </div>
                 <div>
-                    <button onclick={() => plannerActions.swapItem(selectedTemplate, id, -1)}>▲</button>
-                    <button onclick={() => plannerActions.swapItem(selectedTemplate, id, 1)}>▼</button>
+                    <button onclick={() => trackAct.swapTracks(selectedTemplate, id, -1)}>▲</button>
+                    <button onclick={() => trackAct.swapTracks(selectedTemplate, id, 1)}>▼</button>
                 </div>
             </div>
                 
             {/each}
-            <button onclick={(e) => plannerActions.newItemMenu(app, e, selectedTemplate)}>+ Add</button>
+            <button onclick={(e) => trackAct.handleNewTrack(app, selectedTemplate)}>+ Add</button>
             {:else}
             <button onclick={(e) => {
-                plannerActions.newItemMenu(app, e, selectedTemplate);
-                selectedTemplate = plannerActions.getTemplateDate(helper.getISODate(new Date()));
+                trackAct.handleNewTrack(app, selectedTemplate);
+                selectedTemplate = templatesAct.getTemplateDate(helper.getISODate(new Date()));
                 }}>+ Add</button>
             {/if}
             
