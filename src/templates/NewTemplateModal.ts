@@ -1,5 +1,5 @@
 import { Modal, App, Setting } from "obsidian";
-import { templates } from "src/planner/plannerStore";
+import { templates } from "src/templates/templatesStore";
 import type { ISODate } from "src/plugin/types";
 import { get } from "svelte/store";
 

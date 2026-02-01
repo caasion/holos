@@ -1,7 +1,7 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
 import { HolosSettingsTab } from './plugin/SettingsTab';
-import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './planner/plannerStore';
+import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './tracks/templateStore';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
 import { CalendarPipeline } from './calendar/calendarPipelines';

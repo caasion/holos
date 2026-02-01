@@ -16,7 +16,7 @@
 	import HeaderCell from "./grid/HeaderCell.svelte";
 	import EmptyCell from "./grid/EmptyCell.svelte";
 	import PlannerGrid from "./grid/PlannerGrid.svelte";
-	import { templates } from "../plannerStore";
+	import { templates } from "../../templates/templatesStore";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 

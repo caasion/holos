@@ -5,7 +5,7 @@
 	import type { PlannerActions } from "src/planner/logic/itemActions";
 	import type { DataService, HelperService, ISODate, ItemData, ItemID, ItemMeta, PluginSettings } from "src/plugin/types";
 	import { tick } from "svelte";
-	import { templates } from "src/planner/plannerStore";
+	import { templates } from "src/templates/templatesStore";
 	import { PlannerParser } from "src/planner/logic/parser";
 	import { getAllDailyNotes, getDailyNote, createDailyNote } from "obsidian-daily-notes-interface";
 	import moment from "moment";
