@@ -1,21 +1,36 @@
 <script lang="ts">
+	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
+import type { Track } from "src/plugin/types";
 
-  let { label, innerMeta, items } = $props();
+  interface TrackCardProps {
+    track: Track;
+  }
+
+  let { track }: TrackCardProps = $props();
 </script>
 
-<div class="card">
+<div class="card" style={`background-color: ${track.color}10;`}>
   <div class="card-header-container">
-    <h2>{label}</h2>
+    <h3 class="card-header" style={`color: ${track.color};`}>{track.label}</h3>
     <div class="card-data-container">
-      <div>📜</div>
-      <div>O</div>
+      <h3 class="card-header">📜</h3>
+      <div>
+        <CircularProgress 
+          duration={track.timeCommitment}
+          unit={'hr'}
+        />
+      </div>
     </div>
   </div>
   
-  <p>Habit 1 <br> Habit 2 <br> Habit 3</p>
-  {#each items as item}
-    <p>{item}</p>
+  
+  {#each track.habits as habit}
+    <div>{habit.label}</div>
+    <!-- Cell block like editing with tag for recurrance -->
   {/each}
+  
+  <!-- Project Card -->
+  
 </div>
 
 
@@ -30,6 +45,10 @@
     margin: 0px 5px;
   }
 
+  .card-header {
+    margin: auto 2px;
+  }
+
   .card-header-container {
     display: flex;
     justify-content: space-between;
@@ -38,5 +57,6 @@
 
   .card-data-container {
     display: flex;
+    align-items: center;
   }
 </style>

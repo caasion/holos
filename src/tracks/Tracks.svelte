@@ -1,27 +1,19 @@
 <script lang="ts">
 	import TrackCard from "./TrackCard.svelte";
+  import { sampleTemplateData } from "src/templates/sampleTemplateData";
 
+  const tracks = Object.values(sampleTemplateData["2026-02-01"].tracks)
 </script>
 
 <div class="container">
 	<h1>Tracks View</h1>
   <h2>Manage Tracks</h2>
 	<div class="card-container">
-		<TrackCard
-      label="Track 1"
-      innerMeta={{}}
-      items={["a", "b"]}
-    />
+    {#each tracks as track}
     <TrackCard
-      label="Track 1"
-      innerMeta={{}}
-      items={["a", "b"]}
+      {track}
     />
-    <TrackCard
-      label="Track 1"
-      innerMeta={{}}
-      items={["a", "b"]}
-    />
+    {/each}
   </div>
 
   <h2>Schedule Tracks</h2>
