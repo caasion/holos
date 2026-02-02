@@ -1,0 +1,263 @@
+<script lang="ts">
+	interface Habit {
+		id: string;
+		label: string;
+		rrule: string;
+	}
+
+	interface HabitBlockProps {
+		habit: Habit;
+		color: string;
+		onEdit?: (habit: Habit) => void;
+		onDelete?: (habitId: string) => void;
+		onToggle?: (habitId: string) => void;
+	}
+
+	let { habit, color, onEdit, onDelete, onToggle }: HabitBlockProps = $props();
+
+  let isEditing = $state<boolean>(false);
+	let editText = $state<string>("");
+	let skipBlur = $state<boolean>(false);
+
+	function startEdit() {
+		isEditing = true;
+    editText = habit.label;
+	}
+
+	function cancelEdit() {
+		isEditing = false;
+		editText = "";
+		skipBlur = false;
+	}
+
+	function saveEdit() {
+		if (skipBlur) {
+			skipBlur = false;
+			return;
+		}
+
+		onEdit({...habit, label: editText});
+		cancelEdit();
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			saveEdit();
+			skipBlur = true;
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			cancelEdit();
+			skipBlur = true;
+		}
+	}
+
+	function deleteElement() {
+		onDelete(habit.id);
+	}
+
+	// Parse rrule to human-readable format
+	function parseRRule(rrule: string): string {
+		try {
+			const parts = rrule.split(';');
+			let frequency = '';
+			let days = '';
+
+			for (const part of parts) {
+				if (part.startsWith('FREQ=')) {
+					frequency = part.split('=')[1].toLowerCase();
+				} else if (part.startsWith('BYDAY=')) {
+					const dayCode = part.split('=')[1];
+					days = formatDays(dayCode);
+				}
+			}
+
+			if (frequency === 'daily' && !days) {
+				return 'Every day';
+			} else if (frequency === 'daily' && days) {
+				return days;
+			} else if (frequency === 'weekly') {
+				return days || 'Weekly';
+			} else if (frequency === 'monthly') {
+				return 'Monthly';
+			}
+
+			return rrule; // Fallback to raw rrule
+		} catch (e) {
+			return rrule;
+		}
+	}
+
+	function formatDays(dayCode: string): string {
+		const dayMap: Record<string, string> = {
+			'MO': 'Mon',
+			'TU': 'Tue',
+			'WE': 'Wed',
+			'TH': 'Thu',
+			'FR': 'Fri',
+			'SA': 'Sat',
+			'SU': 'Sun'
+		};
+
+		const days = dayCode.split(',').map(d => dayMap[d] || d);
+
+		if (days.length === 7) {
+			return 'Every day';
+		} else if (days.length === 5 && !days.includes('Sat') && !days.includes('Sun')) {
+			return 'Weekdays';
+		} else if (days.length === 2 && days.includes('Sat') && days.includes('Sun')) {
+			return 'Weekends';
+		} else {
+			return days.join(', ');
+		}
+	}
+
+	function handleEdit() {
+		if (onEdit) {
+			onEdit(habit);
+		}
+	}
+
+	function handleDelete() {
+		if (onDelete) {
+			onDelete(habit.id);
+		}
+	}
+
+	function handleToggle() {
+		if (onToggle) {
+			onToggle(habit.id);
+		}
+	}
+</script>
+
+<div class="task-element">
+	<div class="element-row">
+		{#if isEditing}
+			<input
+				type="text"
+				bind:value={editText}
+				onkeydown={handleKeydown}
+				onblur={saveEdit}
+				class="element-input"
+			/>
+		{:else}
+			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
+				<span>↻ {habit.label}</span>
+				<div class="time-badge-container">
+          <span class="time-badge" style={`background-color: ${color}80;`}>
+            {parseRRule(habit.rrule)}
+					</span>
+					
+				</div>
+			</div>
+			<button class="delete-btn" onclick={deleteElement} title="Delete">×</button>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.task-element {
+		width: 100%;
+	}
+
+	.element-row {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.element-content {
+		flex: 1;
+		cursor: text;
+		padding: 2px 4px;
+		border-radius: 2px;
+		display: flex;
+		align-items: center;
+		min-height: 24px;
+		gap: 4px;
+	}
+
+	.element-content:hover {
+		background-color: var(--background-modifier-hover);
+	}
+
+	.element-checkbox-container {
+		height: 20px;
+		width: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.task-checkbox {
+		cursor: pointer;
+		margin: 0;
+	}
+
+	.checked {
+		text-decoration: line-through;
+		opacity: 0.6;
+	}
+
+	.cancelled {
+		text-decoration: line-through;
+		opacity: 0.6;
+	}
+
+	.time-badge-container {
+		margin-left: auto;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		justify-content: flex-end;
+		align-items: center;
+	}
+
+	.time-badge {
+		font-size: 0.85em;
+		background-color: var(--interactive-accent);
+		color: white;
+		padding: 2px 6px;
+		border-radius: 3px;
+	}
+
+	.element-input {
+		flex: 1;
+		padding: 2px 4px;
+		border: 1px solid var(--interactive-accent);
+		border-radius: 2px;
+		background: var(--background-primary);
+		color: var(--text-normal);
+	}
+
+	.delete-btn {
+		opacity: 0;
+		background: transparent;
+		border: none;
+		color: var(--text-muted);
+		cursor: pointer;
+		font-size: 1.2em;
+		padding: 0 4px;
+		line-height: 1;
+	}
+
+	.element-row:hover .delete-btn {
+		opacity: 1;
+	}
+
+	.delete-btn:hover {
+		color: var(--text-error);
+	}
+
+	.children {
+		margin-left: 20px;
+		font-size: 0.9em;
+		color: var(--text-muted);
+	}
+
+	.child-item {
+		padding: 2px 0;
+	}
+</style>
