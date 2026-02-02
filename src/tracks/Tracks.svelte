@@ -30,7 +30,8 @@
 			display: grid;
 			grid-template-columns: repeat(3, 1fr);
 			grid-template-rows: auto;
-      grid-column-gap: 6px;
+      grid-column-gap: 8px;
+      grid-row-gap: 12px;
 		}
 	
 

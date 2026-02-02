@@ -66,18 +66,16 @@
 	<div class="project-tasks">
 		{#if project.data.length > 0}
 			{#each project.data as element, index}
-				<div class="task-row">
-					<TaskElement
-						element={element}
-						index={index}
-            color={color}
-						onUpdate={() => {}}
-						onToggle={() => {}}
-						onCancel={() => {}}
-						onDelete={() => {}}
-						disabled={true}
-					/>
-				</div>
+        <TaskElement
+          element={element}
+          index={index}
+          color={color}
+          onUpdate={() => {}}
+          onToggle={() => {}}
+          onCancel={() => {}}
+          onDelete={() => {}}
+          disabled={true}
+        />
 			{/each}
 		{:else}
 			<div class="empty-state">No tasks yet</div>

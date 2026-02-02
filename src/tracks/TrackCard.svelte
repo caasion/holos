@@ -84,14 +84,14 @@
     border-radius: 1rem;
     width: 100%;
     height: 100%;
-    padding: 10px;
+    padding: 12px;
     margin: 0px 5px;
     overflow-y: auto;
     max-height: 70vh;
   }
 
   .card-header {
-    margin: auto 2px;
+    margin: auto 0px;
   }
 
   .card-header-container {
