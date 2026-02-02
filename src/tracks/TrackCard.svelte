@@ -1,12 +1,35 @@
 <script lang="ts">
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
-import type { Track } from "src/plugin/types";
+	import ProjectCard from "./ProjectCard.svelte";
+	import HabitBlock from "./HabitElement.svelte";
+	import type { Track } from "src/plugin/types";
 
   interface TrackCardProps {
     track: Track;
   }
 
   let { track }: TrackCardProps = $props();
+
+  // Handlers for habit actions (can be implemented later)
+  function handleHabitEdit(habit: any) {
+    console.log('Edit habit:', habit);
+    // TODO: Implement habit editing modal
+  }
+
+  function handleHabitDelete(habitId: string) {
+    console.log('Delete habit:', habitId);
+    // TODO: Implement habit deletion
+  }
+
+  function handleHabitToggle(habitId: string) {
+    console.log('Toggle habit:', habitId);
+    // TODO: Implement habit completion tracking
+  }
+
+  function handleProjectEdit(project: any) {
+    console.log('Edit project:', project);
+    // TODO: Implement project editing modal
+  }
 </script>
 
 <div class="card" style={`background-color: ${track.color}10;`}>
@@ -23,13 +46,33 @@ import type { Track } from "src/plugin/types";
     </div>
   </div>
   
+  <!-- Habits Section -->
+  {#if track.habits.length > 0}
+    <div class="section">
+      <h4 class="section-title">Habits</h4>
+      {#each track.habits as habit}
+        <HabitBlock
+          {habit}
+          color={track.color}
+          onEdit={handleHabitEdit}
+          onDelete={handleHabitDelete}
+          onToggle={handleHabitToggle}
+        />
+      {/each}
+    </div>
+  {/if}
   
-  {#each track.habits as habit}
-    <div>{habit.label}</div>
-    <!-- Cell block like editing with tag for recurrance -->
-  {/each}
-  
-  <!-- Project Card -->
+  <!-- Active Project Section -->
+  {#if track.activeProject}
+    <div class="section">
+      <h4 class="section-title">Active Project</h4>
+      <ProjectCard
+        project={track.activeProject}
+        color={track.color}
+        onEdit={handleProjectEdit}
+      />
+    </div>
+  {/if}
   
 </div>
 
@@ -43,6 +86,8 @@ import type { Track } from "src/plugin/types";
     height: 100%;
     padding: 10px;
     margin: 0px 5px;
+    overflow-y: auto;
+    max-height: 70vh;
   }
 
   .card-header {
@@ -53,10 +98,27 @@ import type { Track } from "src/plugin/types";
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 16px;
   }
 
   .card-data-container {
     display: flex;
     align-items: center;
+  }
+
+  .section {
+    margin-top: 16px;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0px;
+    margin-bottom: 8px;
+
   }
 </style>
