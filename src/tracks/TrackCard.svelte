@@ -1,13 +1,6 @@
 <script lang="ts">
-	import type { ItemInnerMeta } from "src/plugin/types";
 
-  interface TrackCardProps {
-    label: string;
-    innerMeta: ItemInnerMeta;
-    items: string[]
-  }
-
-  let { label, innerMeta, items }: TrackCardProps = $props();
+  let { label, innerMeta, items } = $props();
 </script>
 
 <div class="card">

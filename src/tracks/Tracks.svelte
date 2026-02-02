@@ -1,11 +1,11 @@
 <script lang="ts">
 	import TrackCard from "./TrackCard.svelte";
 
-
 </script>
 
 <div class="container">
-	<h1>Manage Tracks</h1>
+	<h1>Tracks View</h1>
+  <h2>Manage Tracks</h2>
 	<div class="card-container">
 		<TrackCard
       label="Track 1"
@@ -23,6 +23,9 @@
       items={["a", "b"]}
     />
   </div>
+
+  <h2>Schedule Tracks</h2>
+
 </div>
 
 <style>

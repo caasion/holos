@@ -1,7 +1,6 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
 import { HolosSettingsTab } from './plugin/SettingsTab';
-import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './tracks/templateStore';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
 import { CalendarPipeline } from './calendar/calendarPipelines';
@@ -14,6 +13,7 @@ import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
 import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/dailyNote';
+import { sortedTemplateDates, templates } from './templates/templatesStore';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
@@ -32,23 +32,23 @@ export default class HolosPlugin extends Plugin {
 	async onload() {
 		await this.loadPersisted();
 
-		this.dataService = {
-			templates,
-			calendarState,
-			fetchToken,
+		// this.dataService = {
+		// 	templates,
+		// 	calendarState,
+		// 	fetchToken,
 			
-			setTemplate,
-			addToTemplate,
-			getTemplate,
-			getItemFromLabel,
-			removeFromTemplate,
-			removeFromCellsInTemplate: () => false, // NOT IMPLEMENTED
-			removeTemplate,
-			getItemMeta,
-			updateItemMeta,
-			setFloatCell,
-			getFloatCell,
-		}
+		// 	setTemplate,
+		// 	addToTemplate,
+		// 	getTemplate,
+		// 	getItemFromLabel,
+		// 	removeFromTemplate,
+		// 	removeFromCellsInTemplate: () => false, // NOT IMPLEMENTED
+		// 	removeTemplate,
+		// 	getItemMeta,
+		// 	updateItemMeta,
+		// 	setFloatCell,
+		// 	getFloatCell,
+		// }
 
 		this.helperService = {
 			hashText,

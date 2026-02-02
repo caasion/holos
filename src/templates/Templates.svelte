@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { type App } from "obsidian";
 	import { sortedTemplateDates, templates } from "src/templates/templatesStore";
-	import type { HelperService, ISODate } from "src/plugin/types";
+	import type { ISODate } from "src/plugin/types";
 	import { getISODate } from "src/plugin/helpers";
 	import type { TemplateActions } from "./templateActions";
 	import type { TrackActions } from "src/tracks/trackActions";
