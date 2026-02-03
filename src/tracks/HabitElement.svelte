@@ -1,19 +1,14 @@
 <script lang="ts">
-	interface Habit {
-		id: string;
-		label: string;
-		rrule: string;
-	}
+	import type { Habit } from "src/plugin/types";
 
 	interface HabitBlockProps {
 		habit: Habit;
 		color: string;
-		onEdit?: (habit: Habit) => void;
-		onDelete?: (habitId: string) => void;
-		onToggle?: (habitId: string) => void;
+		onDelete: () => void;
+		onEdit: (updates: Partial<Habit>) => void;
 	}
 
-	let { habit, color, onEdit, onDelete, onToggle }: HabitBlockProps = $props();
+	let { habit, color, onDelete, onEdit  }: HabitBlockProps = $props();
 
   let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -36,7 +31,7 @@
 			return;
 		}
 
-		onEdit({...habit, label: editText});
+		onEdit({label: editText});
 		cancelEdit();
 	}
 
@@ -50,10 +45,6 @@
 			cancelEdit();
 			skipBlur = true;
 		}
-	}
-
-	function deleteElement() {
-		onDelete(habit.id);
 	}
 
 	// Parse rrule to human-readable format
@@ -111,24 +102,6 @@
 			return days.join(', ');
 		}
 	}
-
-	function handleEdit() {
-		if (onEdit) {
-			onEdit(habit);
-		}
-	}
-
-	function handleDelete() {
-		if (onDelete) {
-			onDelete(habit.id);
-		}
-	}
-
-	function handleToggle() {
-		if (onToggle) {
-			onToggle(habit.id);
-		}
-	}
 </script>
 
 <div class="task-element">
@@ -151,7 +124,7 @@
 					
 				</div>
 			</div>
-			<button class="delete-btn" onclick={deleteElement} title="Delete">×</button>
+			<button class="delete-btn" onclick={onDelete} title="Delete">×</button>
 		{/if}
 	</div>
 </div>

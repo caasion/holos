@@ -1,8 +1,18 @@
 <script lang="ts">
+	import type { Habit, Track } from "src/plugin/types";
+	import type { TrackActions } from "./trackActions";
 	import TrackCard from "./TrackCard.svelte";
   import { sampleTemplateData } from "src/templates/sampleTemplateData";
 
-  const tracks = Object.values(sampleTemplateData["2026-02-01"].tracks)
+  interface TracksProps {
+    trackAct: TrackActions;
+  }
+
+  let { trackAct }: TracksProps = $props();
+
+  const tDate = "2026-02-01";
+
+  const tracks = Object.values(sampleTemplateData[tDate].tracks)
 </script>
 
 <div class="container">
@@ -12,6 +22,7 @@
     {#each tracks as track}
     <TrackCard
       {track}
+      onTrackEdit={(updates: Partial<Track>) => trackAct.updateTrack(tDate, track.id, updates)}
     />
     {/each}
   </div>

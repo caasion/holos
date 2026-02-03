@@ -2,30 +2,47 @@
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
 	import ProjectCard from "./ProjectCard.svelte";
 	import HabitBlock from "./HabitElement.svelte";
-	import type { Habit, Track } from "src/plugin/types";
+	import type { Habit, Project, Track } from "src/plugin/types";
 
   interface TrackCardProps {
     track: Track;
+    onTrackEdit: (updates: Partial<Track>) => boolean;
   }
 
-  let { track }: TrackCardProps = $props();
+  let { track, onTrackEdit }: TrackCardProps = $props();
 
   // Convert habits record to array for iteration
   let habitsArray = $derived(Object.values(track.habits));
 
   function handleHabitDelete(habitId: string) {
-    console.log('Delete habit:', habitId);
-    // TODO: Implement habit deletion
+    const { [habitId]: _, ...remainingHabits } = track.habits;
+    onTrackEdit({
+      ...track, 
+      habits: remainingHabits
+    });
   }
 
-  function handleHabitToggle(habitId: string) {
-    console.log('Toggle habit:', habitId);
-    // TODO: Implement habit completion tracking
+  function handleHabitEdit(habitId: string, updates: Partial<Habit>) {
+    onTrackEdit({
+      ...track,
+      habits: {
+        ...track.habits,
+        [habitId]: {
+          ...track.habits.habitId,
+          ...updates,
+        }
+      }
+    })
   }
 
-  function handleProjectEdit(project: any) {
-    console.log('Edit project:', project);
-    // TODO: Implement project editing modal
+  function handleProjectEdit(updates: Partial<Project>) {
+    onTrackEdit({
+      ...track,
+      activeProject: {
+        ...track.activeProject,
+        ...updates
+      }
+    })
   }
 </script>
 
@@ -51,9 +68,8 @@
         <HabitBlock
           {habit}
           color={track.color}
-          onEdit={handleHabitEdit}
-          onDelete={handleHabitDelete}
-          onToggle={handleHabitToggle}
+          onDelete={() => handleHabitDelete(habit.id)}
+          onEdit={(updates: Partial<Habit>) => handleHabitEdit(habit.id, updates)}
         />
       {/each}
     </div>
