@@ -3,6 +3,7 @@
 	import type { TrackActions } from "./trackActions";
 	import TrackCard from "./TrackCard.svelte";
   import { sampleTemplateData } from "src/templates/sampleTemplateData";
+	import { templates } from "src/templates/templatesStore";
 
   interface TracksProps {
     trackAct: TrackActions;
@@ -12,7 +13,7 @@
 
   const tDate = "2026-02-01";
 
-  const tracks = Object.values(sampleTemplateData[tDate].tracks)
+  const tracks = $derived($templates ? Object.values($templates[tDate].tracks) : [])
 </script>
 
 <div class="container">

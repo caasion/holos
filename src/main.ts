@@ -86,9 +86,8 @@ export default class HolosPlugin extends Plugin {
 
 		this.trackActions = new TrackActions({
 			settings: this.settings,
-			templateActions: this.templateActions,
+			templateAct: this.templateActions,
 			data: this.dataService, 
-			helpers: this.helperService, 
 			calendarPipelines: this.calendarPipeline
 		})
 
