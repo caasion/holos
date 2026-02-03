@@ -42,7 +42,7 @@ export interface ItemData {
 }
 
 /* NEW Plugin Template Datatypes */
-interface Habit {
+export interface Habit {
 	id: string;
 	label: string;
 	rrule: string;
@@ -59,7 +59,7 @@ export interface Project {
 	label: string;
 	active: RDateInterval[]; // Project can be on and off
 	data: Element[];
-	habits: Habit[]; // can be empty
+	habits: Record<string, Habit>; // can be empty
 }
 
 export interface CalendarMeta {
@@ -82,7 +82,7 @@ export interface Track {
     // Additional data
     timeCommitment: number; // in hours
 	journalHeader: string;
-	habits: Habit[];
+	habits: Record<string, Habit>;
 	
     // Projects
     activeProject: Project;

@@ -13,18 +13,18 @@ export const sampleTemplateData: Templates = {
         color: "#4CAF50",
         timeCommitment: 2,
         journalHeader: "## 🏃 Health & Wellness",
-        habits: [
-          {
+        habits: {
+          "habit-morning-workout": {
             id: "habit-morning-workout",
             label: "Morning Workout",
             rrule: "FREQ=DAILY;BYDAY=MO,WE,FR"
           },
-          {
+          "habit-meditation": {
             id: "habit-meditation",
             label: "Meditation",
             rrule: "FREQ=DAILY"
           }
-        ],
+        },
         activeProject: {
           id: "project-fitness-2026",
           label: "2026 Fitness Goals",
@@ -57,7 +57,7 @@ export const sampleTemplateData: Templates = {
               taskStatus: " "
             }
           ],
-          habits: []
+          habits: {}
         }
       },
       "track-work": {
@@ -67,18 +67,18 @@ export const sampleTemplateData: Templates = {
         color: "#2196F3",
         timeCommitment: 6,
         journalHeader: "## 💼 Work Projects",
-        habits: [
-          {
+        habits: {
+          "habit-standup": {
             id: "habit-standup",
             label: "Daily Standup",
             rrule: "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR"
           },
-          {
+          "habit-review-calendar": {
             id: "habit-review-calendar",
             label: "Review Calendar",
             rrule: "FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR"
           }
-        ],
+        },
         activeProject: {
           id: "project-plugin-dev",
           label: "Obsidian Plugin Development",
@@ -124,7 +124,7 @@ export const sampleTemplateData: Templates = {
               timeUnit: "hr"
             }
           ],
-          habits: []
+          habits: {}
         }
       },
       "track-learning": {
@@ -134,18 +134,18 @@ export const sampleTemplateData: Templates = {
         color: "#FF9800",
         timeCommitment: 2,
         journalHeader: "## 📚 Learning & Development",
-        habits: [
-          {
+        habits: {
+          "habit-read": {
             id: "habit-read",
             label: "Read for 30 minutes",
             rrule: "FREQ=DAILY"
           },
-          {
+          "habit-coding-challenge": {
             id: "habit-coding-challenge",
             label: "Coding Challenge",
             rrule: "FREQ=DAILY;BYDAY=MO,WE,FR"
           }
-        ],
+        },
         activeProject: {
           id: "project-ts-mastery",
           label: "TypeScript Mastery",
@@ -180,7 +180,7 @@ export const sampleTemplateData: Templates = {
               timeUnit: "hr"
             }
           ],
-          habits: []
+          habits: {}
         }
       },
       "track-personal": {
@@ -190,18 +190,18 @@ export const sampleTemplateData: Templates = {
         color: "#E91E63",
         timeCommitment: 2,
         journalHeader: "## 🏠 Personal Life",
-        habits: [
-          {
+        habits: {
+          "habit-gratitude": {
             id: "habit-gratitude",
             label: "Gratitude journaling",
             rrule: "FREQ=DAILY"
           },
-          {
+          "habit-family-time": {
             id: "habit-family-time",
             label: "Quality family time",
             rrule: "FREQ=DAILY"
           }
-        ],
+        },
         activeProject: {
           id: "project-home-improvement",
           label: "Home Organization",
@@ -229,7 +229,7 @@ export const sampleTemplateData: Templates = {
               taskStatus: " "
             }
           ],
-          habits: []
+          habits: {}
         }
       },
       "track-creative": {
@@ -239,13 +239,13 @@ export const sampleTemplateData: Templates = {
         color: "#9C27B0",
         timeCommitment: 1.5,
         journalHeader: "## 🎨 Creative Projects",
-        habits: [
-          {
+        habits: {
+          "habit-sketch": {
             id: "habit-sketch",
             label: "Daily sketch",
             rrule: "FREQ=DAILY;BYDAY=SA,SU"
           }
-        ],
+        },
         activeProject: {
           id: "project-blog",
           label: "Tech Blog",
@@ -275,7 +275,7 @@ export const sampleTemplateData: Templates = {
               timeUnit: "min"
             }
           ],
-          habits: []
+          habits: {}
         }
       }
     }

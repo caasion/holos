@@ -2,7 +2,7 @@
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
 	import ProjectCard from "./ProjectCard.svelte";
 	import HabitBlock from "./HabitElement.svelte";
-	import type { Track } from "src/plugin/types";
+	import type { Habit, Track } from "src/plugin/types";
 
   interface TrackCardProps {
     track: Track;
@@ -10,11 +10,8 @@
 
   let { track }: TrackCardProps = $props();
 
-  // Handlers for habit actions (can be implemented later)
-  function handleHabitEdit(habit: any) {
-    console.log('Edit habit:', habit);
-    // TODO: Implement habit editing modal
-  }
+  // Convert habits record to array for iteration
+  let habitsArray = $derived(Object.values(track.habits));
 
   function handleHabitDelete(habitId: string) {
     console.log('Delete habit:', habitId);
@@ -47,10 +44,10 @@
   </div>
   
   <!-- Habits Section -->
-  {#if track.habits.length > 0}
+  {#if habitsArray.length > 0}
     <div class="section">
       <h4 class="section-title">Habits</h4>
-      {#each track.habits as habit}
+      {#each habitsArray as habit}
         <HabitBlock
           {habit}
           color={track.color}
