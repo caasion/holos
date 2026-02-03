@@ -5,10 +5,10 @@
 		habit: Habit;
 		color: string;
 		onDelete: () => void;
-		onEdit: (updates: Partial<Habit>) => void;
+		onLabelEdit: (label: string) => void;
 	}
 
-	let { habit, color, onDelete, onEdit  }: HabitBlockProps = $props();
+	let { habit, color, onDelete, onLabelEdit  }: HabitBlockProps = $props();
 
   let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -31,7 +31,7 @@
 			return;
 		}
 
-		onEdit({label: editText});
+		onLabelEdit(editText);
 		cancelEdit();
 	}
 

@@ -6,44 +6,15 @@
 
   interface TrackCardProps {
     track: Track;
-    onTrackEdit: (updates: Partial<Track>) => boolean;
+    onHabitLabelEdit: (habitId: string, label: string) => void;
+    onHabitDelete: (habitId: string) => void;
+    onProjectEdit: (project: Project) => void;
   }
 
-  let { track, onTrackEdit }: TrackCardProps = $props();
+  let { track, onHabitLabelEdit, onHabitDelete, onProjectEdit }: TrackCardProps = $props();
 
   // Convert habits record to array for iteration
   let habitsArray = $derived(Object.values(track.habits));
-
-  function handleHabitDelete(habitId: string) {
-    const { [habitId]: _, ...remainingHabits } = track.habits;
-    onTrackEdit({
-      ...track, 
-      habits: remainingHabits
-    });
-  }
-
-  function handleHabitEdit(habitId: string, updates: Partial<Habit>) {
-    onTrackEdit({
-      ...track,
-      habits: {
-        ...track.habits,
-        [habitId]: {
-          ...track.habits.habitId,
-          ...updates,
-        }
-      }
-    })
-  }
-
-  function handleProjectEdit(updates: Partial<Project>) {
-    onTrackEdit({
-      ...track,
-      activeProject: {
-        ...track.activeProject,
-        ...updates
-      }
-    })
-  }
 </script>
 
 <div class="card" style={`background-color: ${track.color}10;`}>
@@ -68,8 +39,8 @@
         <HabitBlock
           {habit}
           color={track.color}
-          onDelete={() => handleHabitDelete(habit.id)}
-          onEdit={(updates: Partial<Habit>) => handleHabitEdit(habit.id, updates)}
+          onDelete={() => onHabitDelete(habit.id)}
+          onLabelEdit={(label) => onHabitLabelEdit(habit.id, label)}
         />
       {/each}
     </div>
@@ -82,7 +53,7 @@
       <ProjectCard
         project={track.activeProject}
         color={track.color}
-        onEdit={handleProjectEdit}
+        onEdit={onProjectEdit}
       />
     </div>
   {/if}

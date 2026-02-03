@@ -105,20 +105,10 @@ export class TemplateActions {
             [tDate]: newTemplate,
         }))
     }
-
-    public updateTemplate(tDate: TDate, updates: Partial<Template>) {
-        templates.update(templates => ({
-            ...templates,
-            [tDate]: {
-                ...templates.tDate,
-                ...updates,
-            }
-        }))
-    }
     
     /** Adds a track to a template of a given date. Returns false if the given date doesn't have a template. */
     public addTrackToTemplate(tDate: TDate, id: string, meta: Track): boolean {
-        if (!get(templates)[tDate]) return false;
+       
     
         templates.update(templates => ({
             ...templates,

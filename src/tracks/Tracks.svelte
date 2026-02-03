@@ -23,7 +23,9 @@
     {#each tracks as track}
     <TrackCard
       {track}
-      onTrackEdit={(updates: Partial<Track>) => trackAct.updateTrack(tDate, track.id, updates)}
+      onHabitLabelEdit={(habitId, label) => trackAct.updateHabitLabel(tDate, track.id, habitId, label)}
+      onHabitDelete={(habitId) => trackAct.removeHabitFromTrack(tDate, track.id, habitId)}
+      onProjectEdit={(project) => trackAct.updateTrackProject(tDate, track.id, project)}
     />
     {/each}
   </div>

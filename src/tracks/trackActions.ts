@@ -1,4 +1,4 @@
-import type { ISODate, DataService, HelperService, CalendarMeta, PluginSettings, TDate, Track } from '../plugin/types';
+import type { ISODate, DataService, HelperService, CalendarMeta, PluginSettings, TDate, Track, Project } from '../plugin/types';
 import { get } from 'svelte/store';
 import { CalendarPipeline } from '../calendar/calendarPipelines';
 import { addDays, parseISO, startOfDay } from 'date-fns';
@@ -67,21 +67,86 @@ export class TrackActions {
     
     // ===== Modifying tracks ===== //
 
-    /** Updates the metadata of an item given a date with a template, the item's id, and a partial object containing the updates. Returns false if given date doesn't have a template. */
-    public updateTrack(tDate: TDate, id: string, updates: Partial<Track>): boolean {
+    /** Updates a habit's label within a track. */
+    public updateHabitLabel(tDate: TDate, trackId: string, habitId: string, label: string): boolean {
         const currTemplate = this.templates.getTemplate(tDate);
-        if (!currTemplate) return false;
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
-        this.templates.updateTemplate(tDate, {
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
             tracks: {
                 ...currTemplate.tracks,
-                [id]: {
-                    ...currTemplate.tracks[id],
-                    ...updates
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    habits: {
+                        ...currTemplate.tracks[trackId].habits,
+                        [habitId]: {
+                            ...currTemplate.tracks[trackId].habits[habitId],
+                            label
+                        }
+                    }
                 }
             }
-        })
-        console.log(this.templates.getTemplate(tDate))
+        });
+    
+        return true;
+    }
+
+    /** Removes a habit from a track. */
+    public removeHabitFromTrack(tDate: TDate, trackId: string, habitId: string): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        const { [habitId]: _, ...remainingHabits } = currTemplate.tracks[trackId].habits;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    habits: remainingHabits
+                }
+            }
+        });
+    
+        return true;
+    }
+
+    /** Updates the active project within a track. */
+    public updateTrackProject(tDate: TDate, trackId: string, project: Project): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    activeProject: project
+                }
+            }
+        });
+    
+        return true;
+    }
+
+    /** Updates a track's order property. */
+    public updateTrackOrder(tDate: TDate, trackId: string, order: number): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    order
+                }
+            }
+        });
     
         return true;
     }
@@ -92,7 +157,7 @@ export class TrackActions {
         evt.stopPropagation();
 
         const menu = new Menu();
-
+ 
         menu
             .addItem((i) =>
                 i.setTitle(`ID: ${id}`)
@@ -127,8 +192,8 @@ export class TrackActions {
 
         // WILL FIX LATER
 
-        this.updateTrack(tDate, id, {order: newOrder});
-        this.updateTrack(tDate, swapTargetID, {order: currOrder});
+        this.updateTrackOrder(tDate, id, newOrder);
+        this.updateTrackOrder(tDate, swapTargetID, currOrder);
 
         return true;
     }
