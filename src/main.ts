@@ -14,6 +14,7 @@ import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundVie
 import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/dailyNote';
 import { sortedTemplateDates, templates } from './templates/templatesStore';
+import { sampleTemplateData } from './templates/sampleTemplateData';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
@@ -165,7 +166,7 @@ export default class HolosPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings) // Populate Settings
 		
 		// Initialize Stores, Subscribe, and assign unsubscribers
-		templates.set(Object.assign({}, {}, data.planner && data.planner.templates));
+		templates.set(Object.assign({}, sampleTemplateData, data.planner && data.planner.templates));
 		this.storeSubscriptions = [
 			templates.subscribe(() => this.queueSave()),
 			templates.subscribe((templates) => templates && Object.keys(templates) && sortedTemplateDates.set(Object.keys(templates).sort()))
@@ -174,7 +175,7 @@ export default class HolosPlugin extends Plugin {
 
 	private snapshot(): PluginData {
 		return {
-			version: 6,
+			version: 7,
 			settings: this.settings,
 			planner: {
 				templates: get(templates),
