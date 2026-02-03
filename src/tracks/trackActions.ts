@@ -11,9 +11,8 @@ import { generateID } from 'src/plugin/helpers';
 
 export interface TrackActionsDeps {
     settings: PluginSettings;
-    templateActions: TemplateActions;
+    templateAct: TemplateActions;
     data: DataService;
-    helpers: HelperService;
     calendarPipelines: CalendarPipeline;
 }
 
@@ -25,7 +24,7 @@ export class TrackActions {
 
     constructor(deps: TrackActionsDeps) {
         this.settings = deps.settings;
-        this.templates = deps.templateActions;
+        this.templates = deps.templateAct;
         this.data = deps.data;
         this.calendarPipelines = deps.calendarPipelines;
     }
@@ -34,7 +33,7 @@ export class TrackActions {
     
     /** Gets the metadata of an item given a date with a template */
     public getTrack(tDate: TDate, id: string): Track {
-        return this.templates.getTemplate(tDate)[id];
+        return this.templates.getTemplate(tDate).tracks[id];
     }
 
     /** Returns the id of a track from a specified template given the item label (case insensitive). */
@@ -73,10 +72,16 @@ export class TrackActions {
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate) return false;
 
-        this.templates.setTemplate(tDate, {
-            ...currTemplate, 
-            [id]: { ...currTemplate[id], ...updates } as Track
+        this.templates.updateTemplate(tDate, {
+            tracks: {
+                ...currTemplate.tracks,
+                [id]: {
+                    ...currTemplate.tracks[id],
+                    ...updates
+                }
+            }
         })
+        console.log(this.templates.getTemplate(tDate))
     
         return true;
     }

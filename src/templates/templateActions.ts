@@ -1,4 +1,4 @@
-import type { HelperService, ISODate, TDate, Track } from "src/plugin/types";
+import type { HelperService, ISODate, TDate, Template, Track } from "src/plugin/types";
 import { sortedTemplateDates, templates } from "./templatesStore";
 import { get, type Writable } from "svelte/store";
 import { addDays, eachDayOfInterval, parseISO } from "date-fns";
@@ -73,7 +73,7 @@ export class TemplateActions {
     }
 
     // ===== Reading templates ===== //
-    public getTemplate(tDate: TDate): Record<string, Track> {
+    public getTemplate(tDate: TDate): Template {
         return get(templates)[tDate];
     }
 
@@ -99,10 +99,20 @@ export class TemplateActions {
     /** Sets the template for a date.
      * Primarily used for initializing templates.
      */
-    public setTemplate(date: TDate, newTemplate: Record<string, Track>) {
+    public setTemplate(tDate: TDate, newTemplate: Template) {
         templates.update(templates => ({
             ...templates,
-            [date]: newTemplate
+            [tDate]: newTemplate,
+        }))
+    }
+
+    public updateTemplate(tDate: TDate, updates: Partial<Template>) {
+        templates.update(templates => ({
+            ...templates,
+            [tDate]: {
+                ...templates.tDate,
+                ...updates,
+            }
         }))
     }
     

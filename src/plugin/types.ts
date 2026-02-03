@@ -93,7 +93,7 @@ export interface Track {
 /* Plugin Template Datatypes */
 export type TDate = ISODate;
 
-interface Template {
+export interface Template {
   id: string;
   name: string;
   effectiveFrom: ISODate; 
