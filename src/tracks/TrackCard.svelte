@@ -60,9 +60,18 @@
   </div>
   
   <!-- Habits Section -->
-  {#if habitsArray.length > 0}
-    <div class="section">
+  <div class="section">
+    <div class="section-header">
       <h4 class="section-title">Habits</h4>
+      <button 
+        class="add-button" 
+        onclick={onHabitAdd}
+        title="Add a new habit"
+      >
+        +
+      </button>
+    </div>
+    {#if habitsArray.length > 0}
       {#each habitsArray as habit}
         <HabitBlock
           {habit}
@@ -71,8 +80,10 @@
           onLabelEdit={(label) => onHabitLabelEdit(habit.id, label)}
         />
       {/each}
-    </div>
-  {/if}
+    {:else}
+      <div class="empty-habits-state">No habits yet. Click + to add one.</div>
+    {/if}
+  </div>
   
   <!-- Active Project Section -->
   {#if track.activeProject}
@@ -132,6 +143,12 @@
     margin-top: 0px;
     margin-bottom: 8px;
 
+  .empty-habits-state {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    font-style: italic;
+    padding: 12px;
+    text-align: center;
   }
 
   .clickable {
