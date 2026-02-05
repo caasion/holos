@@ -8,6 +8,7 @@
     track: Track;
     onHabitLabelEdit: (habitId: string, label: string) => void;
     onHabitDelete: (habitId: string) => void;
+    onHabitAdd: () => void;
     onProjectEdit: (project: Project) => void;
     onTrackLabelClick: () => void;
     onJournalHeaderDoubleClick: () => void;
@@ -18,6 +19,7 @@
     track, 
     onHabitLabelEdit, 
     onHabitDelete, 
+    onHabitAdd,
     onProjectEdit,
     onTrackLabelClick,
     onJournalHeaderDoubleClick,
@@ -134,6 +136,13 @@
     margin-bottom: 12px;
   }
 
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
   .section-title {
     font-size: 0.9em;
     font-weight: 600;
@@ -141,7 +150,29 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 0px;
-    margin-bottom: 8px;
+    margin-bottom: 0px;
+  }
+
+  .add-button {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 1.2em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.2s ease;
+  }
+
+  .add-button:hover {
+    opacity: 0.8;
+  }
 
   .empty-habits-state {
     color: var(--text-muted);

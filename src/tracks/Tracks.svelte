@@ -35,6 +35,7 @@
       {track}
       onHabitLabelEdit={(habitId, label) => trackAct.updateHabitLabel(tDate, track.id, habitId, label)}
       onHabitDelete={(habitId) => trackAct.removeHabitFromTrack(tDate, track.id, habitId)}
+      onHabitAdd={() => trackAct.addHabitToTrack(app, tDate, track.id)}
       onProjectEdit={(project) => trackAct.updateTrackProject(tDate, track.id, project)}
       onTrackLabelClick={() => trackAct.handleEditTrackLabel(app, tDate, track.id, track.label)}
       onJournalHeaderDoubleClick={() => trackAct.handleEditJournalHeader(app, tDate, track.id, track.journalHeader)}

@@ -95,6 +95,33 @@ export class TrackActions {
         return true;
     }
 
+    /** Adds a habit to a track. */
+    public addHabitToTrack(app: App, tDate: TDate, trackId: string) {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return;
+
+        const habitId = generateID("habit-");
+        const newHabit = {
+            id: habitId,
+            label: "",
+            rrule: ""
+        };
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    habits: {
+                        ...currTemplate.tracks[trackId].habits,
+                        [habitId]: newHabit
+                    }
+                }
+            }
+        });
+    }
+
     /** Removes a habit from a track. */
     public removeHabitFromTrack(tDate: TDate, trackId: string, habitId: string): boolean {
         const currTemplate = this.templates.getTemplate(tDate);
