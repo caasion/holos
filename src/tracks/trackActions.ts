@@ -6,6 +6,10 @@ import { Menu, Notice, type App } from 'obsidian';
 import { NewItemModal } from 'src/templates/NewItemModal';
 import { GenericEditModal } from 'src/templates/EditItemModal';
 import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
+import { NewTrackModal } from './NewTrackModal';
+import { EditTrackLabelModal } from './EditTrackLabelModal';
+import { EditTrackTimeModal } from './EditTrackTimeModal';
+import { EditJournalHeaderModal } from './EditJournalHeaderModal';
 import type { TemplateActions } from 'src/templates/templateActions';
 import { generateID } from 'src/plugin/helpers';
 
@@ -58,10 +62,9 @@ export class TrackActions {
     
     /** Handles the creation of a new track (modal and creation). */
     public handleNewTrack(app: App, tDate: ISODate) {
-        const nextOrder = Object.values(this.templates.getTemplate(tDate) || {}).length;
-        new NewItemModal(app, nextOrder, tDate, (meta: Track) => {
-            const id = generateID("track-");
-            this.templates.addTrackToTemplate(tDate, id, meta);
+        const nextOrder = Object.values(this.templates.getTemplate(tDate)?.tracks || {}).length;
+        new NewTrackModal(app, nextOrder, tDate, (track: Track) => {
+            this.templates.addTrackToTemplate(tDate, track.id, track);
         }).open();
     }
     
@@ -149,6 +152,91 @@ export class TrackActions {
         });
     
         return true;
+    }
+
+    /** Updates a track's label. */
+    public updateTrackLabel(tDate: TDate, trackId: string, label: string): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    label
+                }
+            }
+        });
+    
+        return true;
+    }
+
+    /** Updates a track's time commitment (in minutes). */
+    public updateTrackTimeCommitment(tDate: TDate, trackId: string, timeCommitment: number): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    timeCommitment
+                }
+            }
+        });
+    
+        return true;
+    }
+
+    /** Updates a track's journal header. */
+    public updateTrackJournalHeader(tDate: TDate, trackId: string, journalHeader: string): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    journalHeader
+                }
+            }
+        });
+    
+        return true;
+    }
+
+    /** Handles editing a track's label with a modal. */
+    public handleEditTrackLabel(app: App, tDate: ISODate, trackId: string, currentLabel: string) {
+        new EditTrackLabelModal(
+            app,
+            currentLabel,
+            (label) => this.updateTrackLabel(tDate, trackId, label),
+            () => this.handleRemoveTrack(app, tDate, trackId)
+        ).open();
+    }
+
+    /** Handles editing a track's time commitment with a modal. */
+    public handleEditTrackTime(app: App, tDate: ISODate, trackId: string, currentTimeMinutes: number) {
+        new EditTrackTimeModal(
+            app,
+            currentTimeMinutes,
+            (timeMinutes) => this.updateTrackTimeCommitment(tDate, trackId, timeMinutes)
+        ).open();
+    }
+
+    /** Handles editing a track's journal header with a modal. */
+    public handleEditJournalHeader(app: App, tDate: ISODate, trackId: string, currentHeader: string) {
+        new EditJournalHeaderModal(
+            app,
+            currentHeader,
+            (header) => this.updateTrackJournalHeader(tDate, trackId, header)
+        ).open();
     }
 
     /** Creates and opens the context menu for an item. */

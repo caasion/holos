@@ -9,9 +9,20 @@
     onHabitLabelEdit: (habitId: string, label: string) => void;
     onHabitDelete: (habitId: string) => void;
     onProjectEdit: (project: Project) => void;
+    onTrackLabelClick: () => void;
+    onJournalHeaderDoubleClick: () => void;
+    onTimeCommitmentDoubleClick: () => void;
   }
 
-  let { track, onHabitLabelEdit, onHabitDelete, onProjectEdit }: TrackCardProps = $props();
+  let { 
+    track, 
+    onHabitLabelEdit, 
+    onHabitDelete, 
+    onProjectEdit,
+    onTrackLabelClick,
+    onJournalHeaderDoubleClick,
+    onTimeCommitmentDoubleClick
+  }: TrackCardProps = $props();
 
   // Convert habits record to array for iteration
   let habitsArray = $derived(Object.values(track.habits));
@@ -19,15 +30,32 @@
 
 <div class="card" style={`background-color: ${track.color}10;`}>
   <div class="card-header-container">
-    <h3 class="card-header" style={`color: ${track.color};`}>{track.label}</h3>
+    <button 
+      class="card-header clickable track-title" 
+      style={`color: ${track.color};`}
+      onclick={onTrackLabelClick}
+      title="Click to edit track name or delete"
+    >
+      {track.label}
+    </button>
     <div class="card-data-container">
-      <h3 class="card-header">📜</h3>
-      <div>
+      <button 
+        class="card-header clickable journal-icon" 
+        ondblclick={onJournalHeaderDoubleClick}
+        title="Double-click to edit journal header"
+      >
+        📜
+      </button>
+      <button 
+        class="clickable time-display"
+        ondblclick={onTimeCommitmentDoubleClick}
+        title="Double-click to edit time commitment"
+      >
         <CircularProgress 
           duration={track.timeCommitment}
           unit={'hr'}
         />
-      </div>
+      </button>
     </div>
   </div>
   
@@ -104,5 +132,37 @@
     margin-top: 0px;
     margin-bottom: 8px;
 
+  }
+
+  .clickable {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .clickable:hover {
+    opacity: 0.8;
+  }
+
+  .track-title {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 1.17em;
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .journal-icon {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 1.17em;
+    font-weight: bold;
+  }
+
+  .time-display {
+    background: none;
+    border: none;
+    padding: 0;
   }
 </style>
