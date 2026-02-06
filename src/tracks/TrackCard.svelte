@@ -6,6 +6,7 @@
 
   interface TrackCardProps {
     track: Track;
+    onHabitRRuleEdit: (habitId: string, label: string) => void;
     onHabitLabelEdit: (habitId: string, label: string) => void;
     onHabitDelete: (habitId: string) => void;
     onHabitAdd: () => void;
@@ -16,7 +17,8 @@
   }
 
   let { 
-    track, 
+    track,
+    onHabitRRuleEdit, 
     onHabitLabelEdit, 
     onHabitDelete, 
     onHabitAdd,
@@ -79,6 +81,7 @@
           {habit}
           color={track.color}
           onDelete={() => onHabitDelete(habit.id)}
+          onRRuleEdit={(rrule) => onHabitRRuleEdit(habit.id, rrule)}
           onLabelEdit={(label) => onHabitLabelEdit(habit.id, label)}
         />
       {/each}

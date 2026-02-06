@@ -1,14 +1,17 @@
 <script lang="ts">
 	import type { Habit } from "src/plugin/types";
+	import RRuleEditor from "./RRuleEditor.svelte";
+	import { RRuleService } from "./rrule";
 
 	interface HabitBlockProps {
 		habit: Habit;
 		color: string;
 		onDelete: () => void;
+		onRRuleEdit: (rrule: string) => void;
 		onLabelEdit: (label: string) => void;
 	}
 
-	let { habit, color, onDelete, onLabelEdit  }: HabitBlockProps = $props();
+	let { habit, color, onDelete, onRRuleEdit, onLabelEdit  }: HabitBlockProps = $props();
 
   let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -102,6 +105,13 @@
 			return days.join(', ');
 		}
 	}
+
+	function handleTimeBadgeCancel() {
+		popupPosition = null;
+		showRRuleEditor = false;
+	}
+
+	
 </script>
 
 <div class="task-element">
@@ -117,15 +127,23 @@
 		{:else}
 			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
 				<span>↻ {habit.label}</span>
-				<div class="time-badge-container">
-          <span class="time-badge" style={`background-color: ${color}80;`}>
-            {parseRRule(habit.rrule)}
-					</span>
-					
-				</div>
+				
 			</div>
 			<button class="delete-btn" onclick={onDelete} title="Delete">×</button>
 		{/if}
+		<div class="time-badge-container">
+			<div class="time-badge" style={`background-color: ${color}80;`} onclick={handleTimeBadgeClick}>
+				{RRuleService.formatRRule(habit.rrule)}
+			</div>
+			{#if showRRuleEditor && popupPosition}
+				<RRuleEditor 
+					position={popupPosition}
+					selectedDays={RRuleService.parseRRule(habit.rrule)}
+					onSave={handleTimeBadgeSave}
+					onCancel={handleTimeBadgeCancel}
+				/>
+			{/if}
+		</div>
 	</div>
 </div>
 

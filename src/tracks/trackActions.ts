@@ -70,6 +70,31 @@ export class TrackActions {
     
     // ===== Modifying tracks ===== //
 
+    /** Updates a habit's rrule within a track */
+    public updateHabitRRule(tDate: TDate, trackId: string, habitId: string, rrule: string): boolean {
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return false;
+
+        this.templates.setTemplate(tDate, {
+            ...currTemplate,
+            tracks: {
+                ...currTemplate.tracks,
+                [trackId]: {
+                    ...currTemplate.tracks[trackId],
+                    habits: {
+                        ...currTemplate.tracks[trackId].habits,
+                        [habitId]: {
+                            ...currTemplate.tracks[trackId].habits[habitId],
+                            rrule
+                        }
+                    }
+                }
+            }
+        });
+    
+        return true;
+    }
+
     /** Updates a habit's label within a track. */
     public updateHabitLabel(tDate: TDate, trackId: string, habitId: string, label: string): boolean {
         const currTemplate = this.templates.getTemplate(tDate);

@@ -33,6 +33,7 @@
     {#each tracks as track}
     <TrackCard
       {track}
+      onHabitRRuleEdit={(habitId, rrule) => trackAct.updateHabitRRule(tDate, track.id, habitId, rrule)}
       onHabitLabelEdit={(habitId, label) => trackAct.updateHabitLabel(tDate, track.id, habitId, label)}
       onHabitDelete={(habitId) => trackAct.removeHabitFromTrack(tDate, track.id, habitId)}
       onHabitAdd={() => trackAct.addHabitToTrack(app, tDate, track.id)}
