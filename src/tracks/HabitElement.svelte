@@ -50,60 +50,23 @@
 		}
 	}
 
-	// Parse rrule to human-readable format
-	function parseRRule(rrule: string): string {
-		try {
-			const parts = rrule.split(';');
-			let frequency = '';
-			let days = '';
+	let showRRuleEditor = $state<boolean>(false);
+	let popupPosition = $state<{ x: number; y: number; } | null>(null);
 
-			for (const part of parts) {
-				if (part.startsWith('FREQ=')) {
-					frequency = part.split('=')[1].toLowerCase();
-				} else if (part.startsWith('BYDAY=')) {
-					const dayCode = part.split('=')[1];
-					days = formatDays(dayCode);
-				}
-			}
+	function handleTimeBadgeClick(e: MouseEvent) {
+		e.preventDefault();
+		e.stopPropagation();
 
-			if (frequency === 'daily' && !days) {
-				return 'Every day';
-			} else if (frequency === 'daily' && days) {
-				return days;
-			} else if (frequency === 'weekly') {
-				return days || 'Weekly';
-			} else if (frequency === 'monthly') {
-				return 'Monthly';
-			}
-
-			return rrule; // Fallback to raw rrule
-		} catch (e) {
-			return rrule;
+		popupPosition = {
+			x: e.clientX,
+			y: e.clientY + 4,
 		}
+		showRRuleEditor = true;
 	}
 
-	function formatDays(dayCode: string): string {
-		const dayMap: Record<string, string> = {
-			'MO': 'Mon',
-			'TU': 'Tue',
-			'WE': 'Wed',
-			'TH': 'Thu',
-			'FR': 'Fri',
-			'SA': 'Sat',
-			'SU': 'Sun'
-		};
-
-		const days = dayCode.split(',').map(d => dayMap[d] || d);
-
-		if (days.length === 7) {
-			return 'Every day';
-		} else if (days.length === 5 && !days.includes('Sat') && !days.includes('Sun')) {
-			return 'Weekdays';
-		} else if (days.length === 2 && days.includes('Sat') && days.includes('Sun')) {
-			return 'Weekends';
-		} else {
-			return days.join(', ');
-		}
+	function handleTimeBadgeSave(selectedDays: Set<number>) {
+		onRRuleEdit(RRuleService.serializeRRule(selectedDays));
+		handleTimeBadgeCancel();
 	}
 
 	function handleTimeBadgeCancel() {
