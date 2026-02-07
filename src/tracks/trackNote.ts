@@ -1,7 +1,14 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
-import type { PluginSettings, TDate, Template, Track } from "src/plugin/types";
+import type { PluginSettings, Project, TDate, Template, Track } from "src/plugin/types";
 import type { Writable } from "svelte/store";
+
+interface TrackFiles {
+    id: string;
+    track: TFile | null;
+    activeProjectId: string | null;
+    projects: Record<string, TFile>;
+}
 
 export interface TrackNoteServiceDeps {
     app: App;
@@ -19,37 +26,27 @@ export class TrackNoteService {
         this.settings = {...deps.settings, trackFolder: "Tracks"}
     }
 
-    async loadAllTrackContent() {
+    async loadAllTrackContent(): Promise<Record<string, Track>> {
         const trackFolder = this.app.vault.getFolderByPath(this.settings.trackFolder);
 
-        if (!trackFolder) return;
+        if (!trackFolder) return {};
 
-        const loadedTraccks = [];
+        const allTracks: Record<string, Track> = {};
 
         for (const child of trackFolder.children) {
             if (child instanceof TFolder) {
-                const folderFiles = this.findFilesInFolder(child);
+                const trackFiles = this.findFilesInFolder(child);
+                const trackData = await this.loadTrackContent(trackFiles.id, trackFiles);
+                if (!trackData) continue;
 
-                const trackFile = folderFiles.track ?? null;
-                if (!trackFile) continue;
-                const trackData = this.loadTrackContent(trackFile);
-
-                const projectFiles = folderFiles.projects ?? [];
-
-                
+                allTracks[trackFiles.id] = trackData;
             }
         }
 
     }
 
-    findFilesInFolder(folder: TFolder) {
-        const files: {
-            track: TFile | null,
-            projects: TFile[]
-        } = {
-            track: null,
-            projects: []
-        }
+    findFilesInFolder(folder: TFolder): TrackFiles {
+        const files: TrackFiles = { id: '', track: null, activeProjectId: null, projects: {}}
 
         for (const file of folder.children) {
             if (file instanceof TFile && file.extension === "md") {
@@ -60,29 +57,72 @@ export class TrackNoteService {
 
                 const isTrack = tags.includes('#holos/track') || frontmatter?.tags?.includes('holos/track');
                 const isProject = tags.includes('#holos/track') || frontmatter?.tags?.includes('holos/track');
+                const id = frontmatter?.id ?? null;
+                const isActiveProject = frontmatter?.activeProject ?? false;
 
-                if (isTrack) {
+                if (isTrack && id) {
+                    files.id = id;
                     files.track = file;
-                } else if (isProject) {
-                    files.projects.push(file);
+                } else if (isProject && id) {
+                    files.projects[id] = file;
                 } 
+
+                if (isProject && id && isActiveProject) {
+                    files.activeProjectId = id;
+                }
             }
         }
 
         return files;
     }
 
-    async loadTrackContent(file: TFile) {
-        const cache = this.app.metadataCache.getFileCache(file);
+    async loadTrackContent(id: string, trackFiles: TrackFiles): Promise<Track | null> {
+        // Track content
+        const trackFile = trackFiles.track ?? null;
+        if (!trackFile) return null;
+
+        const cache = this.app.metadataCache.getFileCache(trackFile);
         const frontmatter = cache?.frontmatter;
-        const content = await this.app.vault.read(file);
+        const trackContent = await this.app.vault.read(trackFile);
+        if (!trackContent || !frontmatter) return null;
 
-        if (!content) return {};
+        const { order, color, time_commitment, journal_header} = frontmatter;
+        
+        if (!order || !color || !time_commitment || !journal_header) {
+            console.warn(`${trackFile.name} is missing frontmatter fields. Aborting.`);
+            return null;
+        }
 
-        // initial section for description
-        // tasks section
-        // Active project section
-        // Inactive projects section
+        const description = PlannerParser.extractFirstSection(trackContent);
+        
+        const habitSection = PlannerParser.extractSection(trackContent, "Habits");
+        const habits = PlannerParser.parseHabitSection(habitSection);
+
+        // Projects
+        const projects: Record<string, Project> = {};
+
+        for (const [id, file] of Object.entries(trackFiles.projects)) {
+            const projectData = await this.loadProjectContent(id, file);
+            if (!projectData) continue;
+
+            projects[id] = projectData;
+        }
+        
+        return {
+            id,
+            order,
+            label: trackFile.name,
+            color,
+            timeCommitment: time_commitment,
+            journalHeader: journal_header,
+            habits,
+            activeProjectId: trackFiles.activeProjectId,
+            projects
+
+        }
+    }
+
+    async loadProjectContent(id: string, projectFile: TFile): Promise<Project | null> {
 
     }
 }
