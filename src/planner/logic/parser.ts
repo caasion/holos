@@ -18,6 +18,22 @@ export class PlannerParser {
 		this.plannerActions = deps.plannerActions;
 	}
 
+    static extractFirstSection(content: string): string {
+        const lines = content.split('\n');
+        let sectionLines: string[] = [];
+
+        for (const line of lines) {
+            const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
+
+            if (headerMatch) break;
+
+            sectionLines.push(line);
+        }
+
+        return sectionLines.join('\n')
+        
+    }
+
     static extractSection(content: string, headerText: string): string {
         const lines = content.split('\n');
         let sectionLines: string[] = [];
