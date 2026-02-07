@@ -57,9 +57,12 @@
 		e.preventDefault();
 		e.stopPropagation();
 
+		const target = e.currentTarget as HTMLElement;
+		const rect = target.getBoundingClientRect();
+		
 		popupPosition = {
-			x: e.clientX,
-			y: e.clientY + 4,
+			x: rect.left + window.scrollX,
+			y: rect.bottom + window.scrollY + 4,
 		}
 		showRRuleEditor = true;
 	}
@@ -74,8 +77,21 @@
 		showRRuleEditor = false;
 	}
 
+	function handleClickOutside(e: MouseEvent) {
+		if (!showRRuleEditor) return;
+		
+		const target = e.target as HTMLElement;
+		const rruleEditor = target.closest('.rrule-editor-modal');
+		const timeBadge = target.closest('.time-badge');
+		
+		if (!rruleEditor && !timeBadge) {
+			handleTimeBadgeCancel();
+		}
+	}
 	
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 <div class="task-element">
 	<div class="element-row">
@@ -167,6 +183,7 @@
 		gap: 4px;
 		justify-content: flex-end;
 		align-items: center;
+		position: relative;
 	}
 
 	.time-badge {
@@ -175,6 +192,7 @@
 		color: white;
 		padding: 2px 6px;
 		border-radius: 3px;
+		cursor: pointer;
 	}
 
 	.element-input {
