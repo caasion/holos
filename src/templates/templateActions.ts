@@ -108,13 +108,14 @@ export class TemplateActions {
     
     /** Adds a track to a template of a given date. Returns false if the given date doesn't have a template. */
     public addTrackToTemplate(tDate: TDate, id: string, meta: Track): boolean {
-       
-    
         templates.update(templates => ({
             ...templates,
             [tDate]: {
                 ...templates[tDate],
-                [id]: meta
+                tracks : {
+                    ...templates[tDate].tracks,
+                    [id]: meta
+                }
             }
         }))
     
@@ -127,7 +128,7 @@ export class TemplateActions {
     
         templates.update(templates => {
             const current = {...templates};
-            delete current[tDate][id];
+            delete current[tDate].tracks[id];
             return current;
         })
         return true;
