@@ -110,6 +110,7 @@ export class TrackNoteService {
         
         return {
             id,
+            description,
             order,
             label: trackFile.name,
             color,
@@ -123,6 +124,33 @@ export class TrackNoteService {
     }
 
     async loadProjectContent(id: string, projectFile: TFile): Promise<Project | null> {
+        const cache = this.app.metadataCache.getFileCache(projectFile);
+        const frontmatter = cache?.frontmatter;
+        const projectContent = await this.app.vault.read(projectFile);
+        
+        if (!projectContent || !frontmatter) return null;
 
+        const { active } = frontmatter;
+        
+        if (!active) {
+            console.warn(`${projectFile.name} is missing 'active' frontmatter field. Aborting.`);
+            return null;
+        }
+
+        // Parse habits section
+        const habitSection = PlannerParser.extractSection(projectContent, "Habits");
+        const habits = PlannerParser.parseHabitSection(habitSection);
+
+        // Parse data section (tasks/events)
+        const dataSection = PlannerParser.extractSection(projectContent, "Data");
+        const data = PlannerParser.parseDataSection(dataSection);
+        
+        return {
+            id,
+            label: projectFile.basename,
+            active,
+            data,
+            habits
+        };
     }
 }
