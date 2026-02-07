@@ -45,14 +45,14 @@
     <div class="card-data-container">
       <button 
         class="card-header clickable journal-icon" 
-        ondblclick={onJournalHeaderDoubleClick}
+        onclick={onJournalHeaderDoubleClick}
         title="Double-click to edit journal header"
       >
         📜
       </button>
       <button 
         class="clickable time-display"
-        ondblclick={onTimeCommitmentDoubleClick}
+        onclick={onTimeCommitmentDoubleClick}
         title="Double-click to edit time commitment"
       >
         <CircularProgress 
