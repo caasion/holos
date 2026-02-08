@@ -93,6 +93,71 @@ export class PlannerParser {
 
         return journalData;
     }
+
+    static parseHabitSection(section: string): Record<string, { id: string; label: string; rrule: string }> {
+        const lines = section.split('\n');
+        const habits: Record<string, { id: string; label: string; rrule: string }> = {};
+
+        for (const line of lines) {
+            // Skip empty lines or lines that aren't bullet points
+            if (!line || !line.match(/^- /)) continue;
+
+            let text = line.replace(/^- /, '').trim();
+            
+            // Extract rrule from pattern: Label (FREQ=DAILY;BYDAY=MO,WE,FR)
+            const rruleMatch = text.match(/\(([^)]+)\)$/);
+            let rrule = "";
+            
+            if (rruleMatch) {
+                rrule = rruleMatch[1];
+                text = text.replace(rruleMatch[0], '').trim();
+            }
+
+            // Generate ID from label (lowercase, replace spaces with hyphens)
+            const id = 'habit-' + text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            
+            habits[id] = {
+                id,
+                label: text,
+                rrule
+            };
+        }
+
+        return habits;
+    }
+
+    static parseDataSection(section: string): Element[] {
+        const lines = section.split('\n');
+        const data: Element[] = [];
+        let currentElement: Element | null = null;
+
+        for (const line of lines) {
+            // Skip empty lines
+            if (!line.trim()) continue;
+
+            // Top-level element (no tabs or single-level tabs)
+            if (line.match(/^\t?- /)) {
+                // Push previous element if exists
+                if (currentElement) {
+                    data.push(currentElement);
+                }
+                
+                // Parse new element
+                currentElement = PlannerParser.parseElementLine(line);
+            } else if (line.match(/^\t\t- /) && currentElement) {
+                // Child item
+                const text = line.replace(/^\t\t- /, '').trim();
+                currentElement.children.push(text);
+            }
+        }
+
+        // Push last element
+        if (currentElement) {
+            data.push(currentElement);
+        }
+
+        return data;
+    }
     
     public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
 	    const lines = section.split('\n');
