@@ -1,7 +1,7 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
-import type { PluginSettings, Project, TDate, Template, Track } from "src/plugin/types";
-import type { Writable } from "svelte/store";
+import type { PluginSettings, Project, Track } from "src/plugin/types";
+import { type Writable } from "svelte/store";
 
 interface TrackFiles {
     id: string;
@@ -21,28 +21,41 @@ export class TrackNoteService {
 
     public parsedTracksContent: Writable<Record<string, Track>>;
 
+    private trackFileCache: Record<string, TrackFiles>;
+
     constructor(deps: TrackNoteServiceDeps) {
         this.app = deps.app;
         this.settings = {...deps.settings, trackFolder: "Tracks"}
     }
 
-    async loadAllTrackContent(): Promise<Record<string, Track>> {
+    async loadAllTrackContent(): Promise<void> {
+        if (!this.trackFileCache) {
+            await this.populateFileCache();
+        }
+
+        const tracks: Record<string, Track> = {};
+
+        for (const key in this.trackFileCache) {
+            const track = await this.loadTrackContent(key, this.trackFileCache[key])
+            if (track) tracks[key] = track;
+        }
+
+        this.parsedTracksContent.set(tracks);
+    }
+
+    // TODO: Change to a record write locally and then using set() instad of update()
+    async populateFileCache() {
         const trackFolder = this.app.vault.getFolderByPath(this.settings.trackFolder);
-
-        if (!trackFolder) return {};
-
-        const allTracks: Record<string, Track> = {};
-
+        if (!trackFolder) return {}; 
+        
         for (const child of trackFolder.children) {
             if (child instanceof TFolder) {
                 const trackFiles = this.findFilesInFolder(child);
-                const trackData = await this.loadTrackContent(trackFiles.id, trackFiles);
-                if (!trackData) continue;
 
-                allTracks[trackFiles.id] = trackData;
+                this.trackFileCache[trackFiles.id] = trackFiles;
             }
         }
-
+        
     }
 
     findFilesInFolder(folder: TFolder): TrackFiles {
@@ -52,24 +65,23 @@ export class TrackNoteService {
             if (file instanceof TFile && file.extension === "md") {
                 const cache = this.app.metadataCache.getFileCache(file);
                 const frontmatter = cache?.frontmatter;
+                const id = frontmatter?.id ?? null;
+                if (!id) continue;
 
                 const tags = getAllTags(cache) || [];
 
                 const isTrack = tags.includes('#holos/track') || frontmatter?.tags?.includes('holos/track');
                 const isProject = tags.includes('#holos/track') || frontmatter?.tags?.includes('holos/track');
-                const id = frontmatter?.id ?? null;
+                
                 const isActiveProject = frontmatter?.activeProject ?? false;
 
-                if (isTrack && id) {
+                if (isTrack) {
                     files.id = id;
                     files.track = file;
-                } else if (isProject && id) {
+                } else if (isProject) {
                     files.projects[id] = file;
+                    if (isActiveProject) files.activeProjectId = id;
                 } 
-
-                if (isProject && id && isActiveProject) {
-                    files.activeProjectId = id;
-                }
             }
         }
 
