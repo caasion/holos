@@ -19,7 +19,7 @@ export class PlannerParser {
 	}
 
     static extractFirstSection(content: string): string {
-        const lines = content.split('\n');
+        const lines = content.replace(/^---[\s\S]*?---\s*/, '').split('\n');
         let sectionLines: string[] = [];
 
         for (const line of lines) {
@@ -114,7 +114,7 @@ export class PlannerParser {
             }
 
             // Generate ID from label (lowercase, replace spaces with hyphens)
-            const id = 'habit-' + text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const id = 'habit-' + crypto.randomUUID();
             
             habits[id] = {
                 id,
