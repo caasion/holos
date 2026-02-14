@@ -1,5 +1,6 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
+import { TRACKS_VIEW_TYPE, TracksView } from './tracks/TracksView';
 import { HolosSettingsTab } from './plugin/SettingsTab';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
@@ -13,8 +14,9 @@ import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
 import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/dailyNote';
-import { sortedTemplateDates, templates } from './templates/templatesStore';
+import { sortedTemplateDates, templates, parsedTracksContent } from './templates/templatesStore';
 import { sampleTemplateData } from './templates/sampleTemplateData';
+import { TrackNoteService } from './tracks/trackNote';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
@@ -29,6 +31,7 @@ export default class HolosPlugin extends Plugin {
 	public calendarPipeline: CalendarPipeline;
 	public parserService: PlannerParser;
 	public dailyNoteService: DailyNoteService;
+	public trackNoteService: TrackNoteService;
 
 	async onload() {
 		await this.loadPersisted();
@@ -85,11 +88,13 @@ export default class HolosPlugin extends Plugin {
 		
 		this.templateActions = new TemplateActions();
 
+		// TrackNoteService will be initialized lazily when TracksView opens
 		this.trackActions = new TrackActions({
 			settings: this.settings,
 			templateAct: this.templateActions,
 			data: this.dataService, 
-			calendarPipelines: this.calendarPipeline
+			calendarPipelines: this.calendarPipeline,
+			trackNoteService: this.trackNoteService
 		})
 
 		this.parserService = new PlannerParser({
@@ -101,16 +106,16 @@ export default class HolosPlugin extends Plugin {
 			app: this.app,
 			settings: this.settings,
 			parser: this.parserService
-		})
+		});
 
 		// Add Settings Tab using Obsidian's API
 		this.addSettingTab(new HolosSettingsTab(this.app, this));
 
-		// Register UPV using Obsidian's API
+		// Register views using Obsidian's API
 		this.registerView(PLANNER_VIEW_TYPE, (leaf) => new PlannerView(leaf, this));
-		
+		this.registerView(TRACKS_VIEW_TYPE, (leaf) => new TracksView(leaf, this));
 
-		// Add a command to open UPV
+		// Add commands to open views
 		this.addCommand({
 			id: 'open-planner-view',
 			name: 'Open Holos Planner',
@@ -145,7 +150,22 @@ export default class HolosPlugin extends Plugin {
 		// Unsubscribe to stores
 		await this.storeSubscriptions.forEach(unsub => unsub());
 
+		// Clean up track note service if it was initialized
+		if (this.trackNoteService) {
+			this.trackNoteService.destroy();
+		}
+
 		await this.flushSave(); // Save immediately
+	}
+
+	async initializeTrackNoteService() {
+		if (this.trackNoteService) return;
+
+		this.trackNoteService = new TrackNoteService({
+			app: this.app,
+			settings: this.settings,
+			parsedTracksContent: parsedTracksContent
+		});
 	}
 
 	async activateView(view: string) {
