@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Habit, Track } from "src/plugin/types";
-	import type { TrackActions } from "./trackActions";
+	import type { TrackActions } from "../logic/trackActions";
 	import TrackCard from "./TrackCard.svelte";
   import type { App } from "obsidian";
-  import type { TrackNoteService } from "./trackNote";
+  import type { TrackNoteService } from "../logic/trackNote";
 
   interface TracksProps {
     trackAct: TrackActions;

@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
 import HolosPlugin from '../main';
 import Templates from "src/templates/Templates.svelte";
-import Tracks from "src/tracks/Tracks.svelte";
+import Tracks from "src/tracks/ui/Tracks.svelte";
 
 export const PLAYGROUND_VIEW_TYPE = "playground-view"
 

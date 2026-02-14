@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Habit } from "src/plugin/types";
 	import RRuleEditor from "./RRuleEditor.svelte";
-	import { RRuleService } from "./rrule";
+	import { RRuleService } from "../logic/rrule";
 
 	interface HabitBlockProps {
 		habit: Habit;

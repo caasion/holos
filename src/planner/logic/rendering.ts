@@ -1,5 +1,5 @@
 import type { BlockMeta, DataService, DateMapping, ISODate, Item, ItemDict, TDate } from "src/plugin/types";
-import type { PlannerActions } from "../../tracks/trackActions";
+import type { PlannerActions } from "../../tracks/logic/trackActions";
 
 export function getDateMappings(dates: ISODate[], plannerActions: PlannerActions) {
     return dates.map(date => ({

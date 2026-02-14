@@ -1,15 +1,15 @@
-import type { ISODate, DataService, HelperService, CalendarMeta, PluginSettings, TDate, Track, Project } from '../plugin/types';
+import type { ISODate, DataService, HelperService, CalendarMeta, PluginSettings, TDate, Track, Project } from '../../plugin/types';
 import { get } from 'svelte/store';
-import { CalendarPipeline } from '../calendar/calendarPipelines';
+import { CalendarPipeline } from '../../calendar/calendarPipelines';
 import { addDays, parseISO, startOfDay } from 'date-fns';
 import { Menu, Notice, type App } from 'obsidian';
 import { NewItemModal } from 'src/templates/NewItemModal';
 import { GenericEditModal } from 'src/templates/EditItemModal';
 import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
-import { NewTrackModal } from './NewTrackModal';
-import { EditTrackLabelModal } from './EditTrackLabelModal';
-import { EditTrackTimeModal } from './EditTrackTimeModal';
-import { EditJournalHeaderModal } from './EditJournalHeaderModal';
+import { NewTrackModal } from '../ui/NewTrackModal';
+import { EditTrackLabelModal } from '../ui/EditTrackLabelModal';
+import { EditTrackTimeModal } from '../ui/EditTrackTimeModal';
+import { EditJournalHeaderModal } from '../ui/EditJournalHeaderModal';
 import type { TemplateActions } from 'src/templates/templateActions';
 import { generateID } from 'src/plugin/helpers';
 import type { TrackNoteService } from './trackNote';
@@ -442,4 +442,16 @@ export class TrackActions {
     
         return "";
     }
+
+    // ===== Template date utilities ===== //
+    
+    /** Gets the template date for a given ISO date */
+    public getTemplateDate(date: ISODate): ISODate {
+        return this.templates.getTemplateDate(date);
+    }
+}
+
+// Export interface for planner to use
+export interface PlannerActions {
+    getTemplateDate(date: ISODate): ISODate;
 }

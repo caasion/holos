@@ -5,7 +5,7 @@ import { HolosSettingsTab } from './plugin/SettingsTab';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
 import { CalendarPipeline } from './calendar/calendarPipelines';
-import { TrackActions } from './tracks/trackActions';
+import { TrackActions } from './tracks/logic/trackActions';
 import { TemplateActions } from './templates/templateActions';
 import { calendarState, fetchToken } from './calendar/calendarState';
 import { hashText, generateID, getISODate, addDaysISO, swapArrayItems, getISODates, getLabelFromDateRange } from './plugin/helpers';
@@ -16,7 +16,7 @@ import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/dailyNote';
 import { sortedTemplateDates, templates, parsedTracksContent } from './templates/templatesStore';
 import { sampleTemplateData } from './templates/sampleTemplateData';
-import { TrackNoteService } from './tracks/trackNote';
+import { TrackNoteService } from './tracks/logic/trackNote';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
