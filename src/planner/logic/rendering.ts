@@ -1,10 +1,10 @@
 import type { BlockMeta, DataService, DateMapping, ISODate, Item, ItemDict, TDate } from "src/plugin/types";
-import type { PlannerActions } from "../../tracks/logic/trackActions";
+import type { TemplateActions } from "../../templates/templateActions";
 
-export function getDateMappings(dates: ISODate[], plannerActions: PlannerActions) {
+export function getDateMappings(dates: ISODate[], templateActions: TemplateActions) {
     return dates.map(date => ({
 			date,
-			tDate: plannerActions.getTemplateDate(date)
+			tDate: templateActions.getTemplateDate(date)
 		}))
 }
 

@@ -31,7 +31,6 @@ export class PlannerView extends ItemView {
             data: this.plugin.dataService,
             helper: this.plugin.helperService,
             templateActions: this.plugin.templateActions,
-            trackActions: this.plugin.trackActions,
             calendarPipeline: this.plugin.calendarPipeline,
             parser: this.plugin.parserService,
             dailyNoteService: this.plugin.dailyNoteService,

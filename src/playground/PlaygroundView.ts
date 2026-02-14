@@ -32,8 +32,6 @@ export class PlaygroundView extends ItemView {
 		container.empty();
                 
         mount(Tracks, {target: container, props: {
-            trackAct: this.plugin.trackActions,
-            app: this.app,
             trackNoteService: this.plugin.trackNoteService
         }})
     }

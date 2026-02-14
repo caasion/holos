@@ -1,17 +1,17 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
-import type { PlannerActions } from "src/tracks/logic/trackActions";
 import { formatProgressDuration, formatTime } from "src/plugin/helpers";
 import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
+import type { TemplateActions } from "src/templates/templateActions";
 
 export interface ParserDeps {
 	data: DataService;
-	plannerActions: PlannerActions;
+	plannerActions: TemplateActions | null;
 }
 
 export class PlannerParser {
 	private data: DataService;
-	private plannerActions: PlannerActions;
+	private plannerActions: TemplateActions | null;
 
 	constructor(deps: ParserDeps) {
 		this.data = deps.data;
@@ -191,8 +191,9 @@ export class PlannerParser {
 					text = text.replace(fullMatch, '').trim();
 				}
 				
+				const templateDate = this.plannerActions?.getTemplateDate(date) ?? date;
 				currItem = {
-					id: this.data.getItemFromLabel(this.plannerActions.getTemplateDate(date), text),
+					id: this.data.getItemFromLabel(templateDate, text),
 					time: timeCommitment,
 					items: [],
 				}
@@ -330,7 +331,7 @@ export class PlannerParser {
     
     // Serialize entire section back to string
     public serializeSection(date: ISODate, items: Record<ItemID, ItemData>): string {
-        const templateDate = this.plannerActions.getTemplateDate(date);
+        const templateDate = this.plannerActions?.getTemplateDate(date) ?? date;
         const template = this.data.getTemplate(templateDate);
         
         // Sort items by order from template

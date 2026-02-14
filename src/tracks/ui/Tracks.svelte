@@ -1,19 +1,13 @@
 <script lang="ts">
 	import type { Habit, Track } from "src/plugin/types";
-	import type { TrackActions } from "../logic/trackActions";
 	import TrackCard from "./TrackCard.svelte";
-  import type { App } from "obsidian";
   import type { TrackNoteService } from "../logic/trackNote";
 
   interface TracksProps {
-    trackAct: TrackActions;
-    app: App;
     trackNoteService: TrackNoteService;
   }
 
-  let { trackAct, app, trackNoteService }: TracksProps = $props();
-
-  const tDate = "2026-02-01";
+  let { trackNoteService }: TracksProps = $props();
 
   const trackStore = trackNoteService.parsedTracksContent;
 
@@ -40,7 +34,7 @@
     <h2>Manage Tracks</h2>
     <button 
       class="add-track-button"
-      onclick={() => trackAct.handleNewTrack(app, tDate)}
+      onclick={() => trackNoteService.handleNewTrack()}
     >
       + New Track
     </button>
@@ -49,14 +43,14 @@
     {#each Object.values(parsedTracks) as track}
     <TrackCard
       {track}
-      onHabitRRuleEdit={(habitId, rrule) => trackAct.updateHabitRRule(tDate, track.id, habitId, rrule)}
-      onHabitLabelEdit={(habitId, label) => trackAct.updateHabitLabel(tDate, track.id, habitId, label)}
-      onHabitDelete={(habitId) => trackAct.removeHabitFromTrack(tDate, track.id, habitId)}
-      onHabitAdd={() => trackAct.addHabitToTrack(app, tDate, track.id)}
-      onProjectEdit={(project) => trackAct.updateTrackProject(tDate, track.id, project)}
-      onTrackLabelClick={() => trackAct.handleEditTrackLabel(app, tDate, track.id, track.label)}
-      onJournalHeaderDoubleClick={() => trackAct.handleEditJournalHeader(app, tDate, track.id, track.journalHeader)}
-      onTimeCommitmentDoubleClick={() => trackAct.handleEditTrackTime(app, tDate, track.id, track.timeCommitment)}
+      onHabitRRuleEdit={(habitId, rrule) => trackNoteService.updateHabitRRule(track.id, habitId, rrule)}
+      onHabitLabelEdit={(habitId, label) => trackNoteService.updateHabitLabel(track.id, habitId, label)}
+      onHabitDelete={(habitId) => trackNoteService.removeHabitFromTrack(track.id, habitId)}
+      onHabitAdd={() => trackNoteService.addHabitToTrack(track.id)}
+      onProjectEdit={(project) => {/* TODO: Implement project switching */}}
+      onTrackLabelClick={() => trackNoteService.handleEditTrackLabel(track.id, track.label)}
+      onJournalHeaderDoubleClick={() => trackNoteService.handleEditJournalHeader(track.id, track.journalHeader)}
+      onTimeCommitmentDoubleClick={() => trackNoteService.handleEditTrackTime(track.id, track.timeCommitment)}
     />
     {/each}
   </div>

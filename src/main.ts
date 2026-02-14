@@ -5,7 +5,6 @@ import { HolosSettingsTab } from './plugin/SettingsTab';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
 import { CalendarPipeline } from './calendar/calendarPipelines';
-import { TrackActions } from './tracks/logic/trackActions';
 import { TemplateActions } from './templates/templateActions';
 import { calendarState, fetchToken } from './calendar/calendarState';
 import { hashText, generateID, getISODate, addDaysISO, swapArrayItems, getISODates, getLabelFromDateRange } from './plugin/helpers';
@@ -27,7 +26,6 @@ export default class HolosPlugin extends Plugin {
 	public calendarHelperService: CalendarHelperService;
 	public fetchService: FetchService;
 	public templateActions: TemplateActions;
-	public trackActions: TrackActions;
 	public calendarPipeline: CalendarPipeline;
 	public parserService: PlannerParser;
 	public dailyNoteService: DailyNoteService;
@@ -88,18 +86,9 @@ export default class HolosPlugin extends Plugin {
 		
 		this.templateActions = new TemplateActions();
 
-		// TrackNoteService will be initialized lazily when TracksView opens
-		this.trackActions = new TrackActions({
-			settings: this.settings,
-			templateAct: this.templateActions,
-			data: this.dataService, 
-			calendarPipelines: this.calendarPipeline,
-			trackNoteService: this.trackNoteService
-		})
-
 		this.parserService = new PlannerParser({
 			data: this.dataService,
-			plannerActions: this.trackActions,
+			plannerActions: this.templateActions,
 		})
 
 		this.dailyNoteService = new DailyNoteService({

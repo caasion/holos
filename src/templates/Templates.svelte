@@ -4,15 +4,13 @@
 	import type { ISODate } from "src/plugin/types";
 	import { getISODate } from "src/plugin/helpers";
 	import type { TemplateActions } from "./templateActions";
-	import type { TrackActions } from "src/tracks/trackActions";
 
     interface ViewProps {
         app: App;
         templatesAct: TemplateActions;
-        trackAct: TrackActions;
     }
 
-    let { app, templatesAct, trackAct }: ViewProps = $props();
+    let { app, templatesAct }: ViewProps = $props();
 
     let selectedTemplate = $state<ISODate>(templatesAct.getTemplateDate(getISODate(new Date())) ?? "");
 
@@ -64,24 +62,18 @@
                     role="button"
                     tabindex="0"
                     style="color: {meta.color};"
-                    onclick={(e: MouseEvent) => trackAct.openTrackMenu(app, e, selectedTemplate, id, meta)}
-                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ')}
                 >
                     {meta.label}
                 </div>
                 <div>
-                    <button onclick={() => trackAct.swapTracks(selectedTemplate, id, -1)}>▲</button>
-                    <button onclick={() => trackAct.swapTracks(selectedTemplate, id, 1)}>▼</button>
+                    <!-- TODO: Implement track reordering with file-system based tracks -->
                 </div>
             </div>
                 
             {/each}
-            <button onclick={(e) => trackAct.handleNewTrack(app, selectedTemplate)}>+ Add</button>
+            <!-- TODO: Add track assignment to template -->
             {:else}
-            <button onclick={(e) => {
-                trackAct.handleNewTrack(app, selectedTemplate);
-                selectedTemplate = templatesAct.getTemplateDate(getISODate(new Date()));
-                }}>+ Add</button>
+            <p>Select or create a template to manage tracks</p>
             {/if}
             
         </div>

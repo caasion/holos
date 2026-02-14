@@ -1,7 +1,13 @@
-import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef } from "obsidian";
+import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
 import type { PluginSettings, Project, Track } from "src/plugin/types";
-import { type Writable } from "svelte/store";
+import { type Writable, get } from "svelte/store";
+import { NewTrackModal } from '../ui/NewTrackModal';
+import { EditTrackLabelModal } from '../ui/EditTrackLabelModal';
+import { EditTrackTimeModal } from '../ui/EditTrackTimeModal';
+import { EditJournalHeaderModal } from '../ui/EditJournalHeaderModal';
+import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
+import { GenericEditModal } from 'src/templates/EditItemModal';
 
 interface TrackFiles {
     id: string | null;
@@ -675,5 +681,159 @@ export class TrackNoteService {
             console.error('Error deleting track:', error);
             return false;
         }
+    }
+
+    // ===== Modifying habits ===== //
+
+    /** Adds a habit to a track */
+    public async addHabitToTrack(trackId: string, habitLabel: string = "", habitRRule: string = ""): Promise<boolean> {
+        const habitId = `habit-${Date.now()}`;
+        const newHabit = {
+            id: habitId,
+            label: habitLabel,
+            rrule: habitRRule
+        };
+
+        return await this.updateTrack(trackId, { addHabit: newHabit });
+    }
+
+    /** Removes a habit from a track */
+    public async removeHabitFromTrack(trackId: string, habitId: string): Promise<boolean> {
+        return await this.updateTrack(trackId, { removeHabitId: habitId });
+    }
+
+    /** Updates a habit's rrule within a track */
+    public async updateHabitRRule(trackId: string, habitId: string, rrule: string): Promise<boolean> {
+        return await this.updateHabit(trackId, habitId, { rrule });
+    }
+
+    /** Updates a habit's label within a track */
+    public async updateHabitLabel(trackId: string, habitId: string, label: string): Promise<boolean> {
+        return await this.updateHabit(trackId, habitId, { label });
+    }
+
+    // ===== Reading tracks ===== //
+
+    /** Gets track metadata by ID */
+    public getTrack(id: string): Track | undefined {
+        const tracks = get(this.parsedTracksContent);
+        return tracks[id];
+    }
+
+    /** Returns the id of a track given the label (case insensitive) */
+    public getTrackIDFromLabel(label: string): string {
+        const tracks = get(this.parsedTracksContent);
+        
+        for (const track of Object.values(tracks)) {
+            if (label.toLowerCase() === track.label.toLowerCase()) {
+                return track.id;
+            }
+        }
+    
+        return "";
+    }
+
+    // ===== Modal handlers ===== //
+
+    /** Handles the creation of a new track (modal and creation) */
+    public handleNewTrack() {
+        const tracks = get(this.parsedTracksContent);
+        const nextOrder = Object.keys(tracks).length;
+        
+        new NewTrackModal(this.app, nextOrder, new Date().toISOString().split('T')[0], async (track: Track) => {
+            const success = await this.createTrack(track);
+            if (success) {
+                new Notice(`Track "${track.label}" created successfully`);
+            } else {
+                new Notice(`Failed to create track "${track.label}"`);
+            }
+        }).open();
+    }
+
+    /** Handles editing a track's label with a modal */
+    public handleEditTrackLabel(trackId: string, currentLabel: string) {
+        new EditTrackLabelModal(
+            this.app,
+            currentLabel,
+            (label) => this.updateTrack(trackId, { label }),
+            () => this.handleRemoveTrack(trackId)
+        ).open();
+    }
+
+    /** Handles editing a track's time commitment with a modal */
+    public handleEditTrackTime(trackId: string, currentTimeMinutes: number) {
+        new EditTrackTimeModal(
+            this.app,
+            currentTimeMinutes,
+            (timeMinutes) => this.updateTrack(trackId, { frontmatter: { time_commitment: timeMinutes } })
+        ).open();
+    }
+
+    /** Handles editing a track's journal header with a modal */
+    public handleEditJournalHeader(trackId: string, currentHeader: string) {
+        new EditJournalHeaderModal(
+            this.app,
+            currentHeader,
+            (header) => this.updateTrack(trackId, { frontmatter: { journal_header: header } })
+        ).open();
+    }
+
+    /** Handles the deletion of a track (confirmation modal and deletion) */
+    public handleRemoveTrack(trackId: string) {
+        new ConfirmationModal(
+            this.app, 
+            async () => {
+                const success = await this.deleteTrack(trackId);
+                if (success) {
+                    await this.invalidateCache();
+                    new Notice('Track deleted successfully');
+                }
+            },
+            "Remove",
+            "Removing the track will delete the entire track folder and all its projects."
+        ).open();
+    }
+
+    /** Creates and opens the context menu for a track */
+    public openTrackMenu(evt: MouseEvent, trackId: string) {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        const track = this.getTrack(trackId);
+        if (!track) return;
+
+        const menu = new Menu();
+ 
+        menu
+            .addItem((i) =>
+                i.setTitle(`ID: ${trackId}`)
+                .setIcon("info")
+            )
+            .addSeparator()
+            .addItem((i) =>
+                i.setTitle("Edit")
+                .setIcon("pencil")
+                .onClick(() => {
+                    new GenericEditModal(this.app, track, async (newMeta) => {
+                        // Update multiple fields at once
+                        await this.updateTrack(trackId, {
+                            frontmatter: {
+                                color: newMeta.color,
+                                time_commitment: newMeta.timeCommitment,
+                                journal_header: newMeta.journalHeader
+                            }
+                        });
+                    }).open();
+                })
+            )
+            .addItem((i) =>
+                i.setTitle("Remove")
+                .setIcon("x")
+                .onClick(() => {
+                    this.handleRemoveTrack(trackId);
+                })
+            )
+
+        menu.showAtPosition({ x: evt.clientX, y: evt.clientY });
     }
 }
