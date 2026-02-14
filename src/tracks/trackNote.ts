@@ -13,6 +13,7 @@ interface TrackFiles {
 export interface TrackNoteServiceDeps {
     app: App;
     settings: PluginSettings;
+    parsedTracksContent: Writable<Record<string, Track>>;
 }
 
 export class TrackNoteService {
@@ -32,6 +33,7 @@ export class TrackNoteService {
     constructor(deps: TrackNoteServiceDeps) {
         this.app = deps.app;
         this.settings = deps.settings;
+        this.parsedTracksContent = deps.parsedTracksContent;
     }
 
     async loadAllTrackContent(): Promise<void> {
@@ -106,13 +108,15 @@ export class TrackNoteService {
         const frontmatter = cache?.frontmatter;
         const trackContent = await this.app.vault.read(trackFile);
         if (!trackContent || !frontmatter) return null;
-
-        const { order, color, time_commitment, journal_header} = frontmatter;
         
-        if (!order || !color || !time_commitment || !journal_header) {
-            console.warn(`${trackFile.name} is missing frontmatter fields. Aborting.`);
+        if (!("order" in frontmatter)) {
+            console.warn(`${trackFile.name} is missing order. Aborting.`);
             return null;
         }
+
+        const { order, time_commitment, journal_header} = frontmatter;
+
+        const color = frontmatter.color ?? "#cccccc";
 
         const description = PlannerParser.extractFirstSection(trackContent);
         
@@ -290,5 +294,386 @@ export class TrackNoteService {
     /** Clean up resources */
     destroy(): void {
         this.cleanupFileWatchers();
+    }
+
+    /** Create a new track with folder structure */
+    async createTrack(track: Track): Promise<boolean> {
+        try {
+            // Create the track folder
+            const trackFolderPath = `${this.settings.trackFolder}/${track.label}`;
+            const trackFolder = this.app.vault.getFolderByPath(trackFolderPath);
+            
+            if (trackFolder) {
+                console.warn(`Track folder already exists: ${trackFolderPath}`);
+                await this.app.vault.createFolder(trackFolderPath);
+            }
+
+            // Create the track file
+            const trackFilePath = `${trackFolderPath}/${track.label}.md`;
+            const trackContent = this.generateTrackContent(track);
+            await this.app.vault.create(trackFilePath, trackContent);
+
+            return true;
+        } catch (error) {
+            console.error('Error creating track:', error);
+            return false;
+        }
+    }
+
+    /** Generate track file content from Track object */
+    private generateTrackContent(track: Track): string {
+        const lines: string[] = [];
+
+        // Frontmatter
+        lines.push('---');
+        lines.push(`id: ${track.id}`);
+        lines.push(`order: ${track.order}`);
+        lines.push(`color: ${track.color}`);
+        lines.push(`time_commitment: ${track.timeCommitment}`);
+        lines.push(`journal_header: ${track.journalHeader}`);
+        lines.push('tags:');
+        lines.push('  - holos/track');
+        lines.push('---');
+        lines.push('');
+
+        // Description
+        if (track.description) {
+            lines.push(track.description);
+            lines.push('');
+        }
+
+        // Habits section
+        lines.push('## Habits');
+        lines.push('');
+        for (const habit of Object.values(track.habits)) {
+            const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+            lines.push(`- ${habit.label}${rruleStr}`);
+        }
+
+        return lines.join('\n');
+    }
+
+    /** 
+     * Update track properties including label, description, frontmatter, and habits.
+     * Pass only the fields you want to update in the updates object.
+     */
+    async updateTrack(trackId: string, updates: {
+        label?: string;
+        description?: string;
+        frontmatter?: Record<string, any>;
+        addHabit?: { id: string; label: string; rrule: string };
+        removeHabitId?: string;
+    }): Promise<boolean> {
+        try {
+            const trackFiles = this.trackFileCache[trackId];
+            if (!trackFiles || !trackFiles.track) {
+                console.warn(`Track ${trackId} not found`);
+                return false;
+            }
+
+            const file = trackFiles.track;
+
+            // Handle label update (requires file/folder rename)
+            if (updates.label) {
+                const trackFile = trackFiles.track;
+                const oldFolder = trackFile.parent;
+                if (!oldFolder) return false;
+
+                // Create new folder path
+                const newFolderPath = `${this.settings.trackFolder}/${updates.label}`;
+                const newTrackPath = `${newFolderPath}/${updates.label}.md`;
+
+                // Rename folder (this moves all contents)
+                await this.app.fileManager.renameFile(oldFolder, newFolderPath);
+
+                // Get the moved track file
+                const movedTrackFile = this.app.vault.getFileByPath(trackFile.path.replace(oldFolder.path, newFolderPath));
+                if (movedTrackFile) {
+                    // Rename the track file
+                    await this.app.fileManager.renameFile(movedTrackFile, newTrackPath);
+                }
+                
+                await this.invalidateCache();
+                return true;
+            }
+
+            // Handle frontmatter updates
+            if (updates.frontmatter) {
+                await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                    for (const [key, value] of Object.entries(updates.frontmatter!)) {
+                        frontmatter[key] = value;
+                    }
+                });
+            }
+
+            // Handle description update
+            if (updates.description !== undefined) {
+                const content = await this.app.vault.read(file);
+                
+                // Split into parts
+                const lines = content.split('\n');
+                let frontmatterEnd = -1;
+                let inFrontmatter = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i] === '---') {
+                        if (!inFrontmatter) {
+                            inFrontmatter = true;
+                        } else {
+                            frontmatterEnd = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (frontmatterEnd === -1) return false;
+
+                // Find first section header
+                let firstSectionIndex = -1;
+                for (let i = frontmatterEnd + 1; i < lines.length; i++) {
+                    if (lines[i].match(/^#{1,6}\s+/)) {
+                        firstSectionIndex = i;
+                        break;
+                    }
+                }
+
+                // Rebuild content
+                const newLines = lines.slice(0, frontmatterEnd + 1);
+                newLines.push('');
+                newLines.push(updates.description);
+                newLines.push('');
+                
+                if (firstSectionIndex !== -1) {
+                    newLines.push(...lines.slice(firstSectionIndex));
+                } else {
+                    // No sections found, add habits section
+                    newLines.push('## Habits');
+                    newLines.push('');
+                }
+
+                await this.app.vault.modify(file, newLines.join('\n'));
+            }
+
+            // Handle adding a habit
+            if (updates.addHabit) {
+                const content = await this.app.vault.read(file);
+                const habit = updates.addHabit;
+                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+                const newHabitLine = `- ${habit.label}${rruleStr}`;
+                
+                // Find the Habits section in the original content
+                const habitsHeaderRegex = /^## Habits$/m;
+                const match = content.match(habitsHeaderRegex);
+                
+                if (!match || match.index === undefined) {
+                    // No Habits section, add it
+                    const newContent = content + '\n\n## Habits\n' + newHabitLine;
+                    await this.app.vault.modify(file, newContent);
+                } else {
+                    // Find where to insert the new habit
+                    const beforeHabits = content.substring(0, match.index + match[0].length);
+                    const afterHabits = content.substring(match.index + match[0].length);
+                    
+                    // Find next section or end of file
+                    const nextSectionMatch = afterHabits.match(/\n## /);
+                    if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+                        const habitsContent = afterHabits.substring(0, nextSectionMatch.index);
+                        const restContent = afterHabits.substring(nextSectionMatch.index);
+                        
+                        const newContent = beforeHabits + '\n' + newHabitLine + habitsContent + restContent;
+                        await this.app.vault.modify(file, newContent);
+                    } else {
+                        // No next section, append to end
+                        const newContent = beforeHabits + '\n' + newHabitLine + afterHabits;
+                        await this.app.vault.modify(file, newContent);
+                    }
+                }
+            }
+
+            // Handle removing a habit
+            if (updates.removeHabitId) {
+                const content = await this.app.vault.read(file);
+                
+                // Parse current habits
+                const habitSection = PlannerParser.extractSection(content, 'Habits');
+                const habits = PlannerParser.parseHabitSection(habitSection);
+                
+                const habit = habits[updates.removeHabitId];
+                if (!habit) {
+                    console.warn(`Habit ${updates.removeHabitId} not found in track ${trackId}`);
+                    return false;
+                }
+
+                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+                const lineToRemove = `- ${habit.label}${rruleStr}`;
+                
+                // Remove the line (including newline)
+                const newContent = content.replace(new RegExp(`^${lineToRemove}$\n?`, 'm'), '');
+                await this.app.vault.modify(file, newContent);
+            }
+
+            await this.refreshTrack(trackId);
+            return true;
+        } catch (error) {
+            console.error('Error updating track:', error);
+            return false;
+        }
+    }
+
+    /** Update a habit's label or rrule */
+    async updateHabit(trackId: string, habitId: string, updates: { label?: string; rrule?: string }): Promise<boolean> {
+        try {
+            const trackFiles = this.trackFileCache[trackId];
+            if (!trackFiles || !trackFiles.track) {
+                console.warn(`Track ${trackId} not found`);
+                return false;
+            }
+
+            const file = trackFiles.track;
+            const content = await this.app.vault.read(file);
+            
+            // Parse current habits
+            const habitSection = PlannerParser.extractSection(content, 'Habits');
+            const habits = PlannerParser.parseHabitSection(habitSection);
+            
+            const habit = habits[habitId];
+            if (!habit) {
+                console.warn(`Habit ${habitId} not found in track ${trackId}`);
+                return false;
+            }
+
+            // Update habit
+            const updatedLabel = updates.label ?? habit.label;
+            const updatedRRule = updates.rrule ?? habit.rrule;
+            
+            const oldRRuleStr = habit.rrule ? ` (${habit.rrule})` : '';
+            const oldLine = `- ${habit.label}${oldRRuleStr}`;
+            
+            const newRRuleStr = updatedRRule ? ` (${updatedRRule})` : '';
+            const newLine = `- ${updatedLabel}${newRRuleStr}`;
+            
+            // Replace in content
+            const newContent = content.replace(oldLine, newLine);
+            await this.app.vault.modify(file, newContent);
+            
+            await this.refreshTrack(trackId);
+            return true;
+        } catch (error) {
+            console.error('Error updating habit:', error);
+            return false;
+        }
+    }
+
+    /** Create a new project in a track */
+    async createProject(trackId: string, project: Project): Promise<boolean> {
+        try {
+            const trackFiles = this.trackFileCache[trackId];
+            if (!trackFiles || !trackFiles.track) {
+                console.warn(`Track ${trackId} not found`);
+                return false;
+            }
+
+            const trackFolder = trackFiles.track.parent;
+            if (!trackFolder) return false;
+
+            // Create project file
+            const projectFilePath = `${trackFolder.path}/${project.label}.md`;
+            const projectContent = this.generateProjectContent(project);
+            await this.app.vault.create(projectFilePath, projectContent);
+
+            await this.invalidateCache();
+            return true;
+        } catch (error) {
+            console.error('Error creating project:', error);
+            return false;
+        }
+    }
+
+    /** Generate project file content from Project object */
+    private generateProjectContent(project: Project): string {
+        const lines: string[] = [];
+
+        // Frontmatter
+        lines.push('---');
+        lines.push(`id: ${project.id}`);
+        lines.push(`active: ${project.active}`);
+        lines.push('tags:');
+        lines.push('  - holos/project');
+        lines.push('---');
+        lines.push('');
+
+        // Habits section
+        lines.push('## Habits');
+        lines.push('');
+        for (const habit of Object.values(project.habits)) {
+            const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+            lines.push(`- ${habit.label}${rruleStr}`);
+        }
+        lines.push('');
+
+        // Data section
+        lines.push('## Data');
+        lines.push('');
+        for (const element of project.data) {
+            const taskMarker = element.isTask ? `[${element.taskStatus || ' '}] ` : '';
+            lines.push(`- ${taskMarker}${element.text}`);
+            
+            for (const child of element.children) {
+                lines.push(`\t- ${child}`);
+            }
+        }
+
+        return lines.join('\n');
+    }
+
+    /** Set active project for a track */
+    async setActiveProject(trackId: string, projectId: string | null): Promise<boolean> {
+        try {
+            const trackFiles = this.trackFileCache[trackId];
+            if (!trackFiles) {
+                console.warn(`Track ${trackId} not found`);
+                return false;
+            }
+
+            // Remove activeProject flag from all projects
+            for (const [id, projectFile] of Object.entries(trackFiles.projects)) {
+                const isActive = id === projectId;
+                await this.app.fileManager.processFrontMatter(projectFile, (frontmatter) => {
+                    if (isActive) {
+                        frontmatter.activeProject = true;
+                    } else {
+                        delete frontmatter.activeProject;
+                    }
+                });
+            }
+
+            await this.refreshTrack(trackId);
+            return true;
+        } catch (error) {
+            console.error('Error setting active project:', error);
+            return false;
+        }
+    }
+
+    /** Delete a track and its folder */
+    async deleteTrack(trackId: string): Promise<boolean> {
+        try {
+            const trackFiles = this.trackFileCache[trackId];
+            if (!trackFiles || !trackFiles.track) {
+                console.warn(`Track ${trackId} not found`);
+                return false;
+            }
+
+            const trackFolder = trackFiles.track.parent;
+            if (!trackFolder) return false;
+
+            // Delete the entire track folder (including all projects)
+            await this.app.vault.delete(trackFolder, true);
+
+            return true;
+        } catch (error) {
+            console.error('Error deleting track:', error);
+            return false;
+        }
     }
 }
