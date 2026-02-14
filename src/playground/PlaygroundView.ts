@@ -23,12 +23,18 @@ export class PlaygroundView extends ItemView {
     }
 
     async onOpen() {
+        // Initialize track note service if not already initialized
+        if (!this.plugin.trackNoteService) {
+            await this.plugin.initializeTrackNoteService();
+        }
+
         const container = this.contentEl;
 		container.empty();
                 
         mount(Tracks, {target: container, props: {
             trackAct: this.plugin.trackActions,
-            app: this.app
+            app: this.app,
+            trackNoteService: this.plugin.trackNoteService
         }})
     }
 
