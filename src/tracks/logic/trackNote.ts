@@ -41,6 +41,8 @@ export class TrackNoteService {
         this.settings = deps.settings;
         this.parsedTracksContent = deps.parsedTracksContent;
     }
+    
+    // ===== Read operations ===== //
 
     async loadAllTrackContent(): Promise<void> {
         if (!this.trackFileCache || Object.keys(this.trackFileCache).length === 0) {
@@ -75,7 +77,7 @@ export class TrackNoteService {
         }
     }
 
-    findFilesInFolder(folder: TFolder): TrackFiles {
+    private findFilesInFolder(folder: TFolder): TrackFiles {
         const files: TrackFiles = { id: null, track: null, activeProjectId: null, projects: {}}
 
         for (const file of folder.children) {
@@ -105,10 +107,12 @@ export class TrackNoteService {
         return files;
     }
 
-    async loadTrackContent(id: string, trackFiles: TrackFiles): Promise<Track | null> {
+    private async loadTrackContent(id: string, trackFiles: TrackFiles): Promise<Track | null> {
         // Track content
         const trackFile = trackFiles.track ?? null;
         if (!trackFile) return null;
+
+        console.log(`Loading track ${id}`)
 
         const cache = this.app.metadataCache.getFileCache(trackFile);
         const frontmatter = cache?.frontmatter;
@@ -154,7 +158,7 @@ export class TrackNoteService {
         }
     }
 
-    async loadProjectContent(id: string, projectFile: TFile): Promise<Project | null> {
+    private async loadProjectContent(id: string, projectFile: TFile): Promise<Project | null> {
         const cache = this.app.metadataCache.getFileCache(projectFile);
         const frontmatter = cache?.frontmatter;
         const projectContent = await this.app.vault.read(projectFile);
@@ -184,6 +188,8 @@ export class TrackNoteService {
             habits
         };
     }
+
+    // ===== File watchers ===== //
 
     /** Invalidate the entire cache and reload all tracks */
     async invalidateCache(): Promise<void> {
@@ -297,10 +303,7 @@ export class TrackNoteService {
         }
     }
 
-    /** Clean up resources */
-    destroy(): void {
-        this.cleanupFileWatchers();
-    }
+    // ===== Write operations ===== // 
 
     /** Create a new track with folder structure */
     async createTrack(track: Track): Promise<boolean> {
@@ -309,12 +312,13 @@ export class TrackNoteService {
             const trackFolderPath = `${this.settings.trackFolder}/${track.label}`;
             const trackFolder = this.app.vault.getFolderByPath(trackFolderPath);
             
-            if (trackFolder) {
-                console.warn(`Track folder already exists: ${trackFolderPath}`);
+            if (!trackFolder) {
+                console.log(`Creating folder: ${trackFolderPath}`);
                 await this.app.vault.createFolder(trackFolderPath);
             }
 
             // Create the track file
+            console.log("Creating file")
             const trackFilePath = `${trackFolderPath}/${track.label}.md`;
             const trackContent = this.generateTrackContent(track);
             await this.app.vault.create(trackFilePath, trackContent);
@@ -462,59 +466,53 @@ export class TrackNoteService {
 
             // Handle adding a habit
             if (updates.addHabit) {
-                const content = await this.app.vault.read(file);
-                const habit = updates.addHabit;
-                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
-                const newHabitLine = `- ${habit.label}${rruleStr}`;
-                
-                // Find the Habits section in the original content
-                const habitsHeaderRegex = /^## Habits$/m;
-                const match = content.match(habitsHeaderRegex);
-                
-                if (!match || match.index === undefined) {
-                    // No Habits section, add it
-                    const newContent = content + '\n\n## Habits\n' + newHabitLine;
-                    await this.app.vault.modify(file, newContent);
-                } else {
-                    // Find where to insert the new habit
-                    const beforeHabits = content.substring(0, match.index + match[0].length);
-                    const afterHabits = content.substring(match.index + match[0].length);
-                    
-                    // Find next section or end of file
-                    const nextSectionMatch = afterHabits.match(/\n## /);
-                    if (nextSectionMatch && nextSectionMatch.index !== undefined) {
-                        const habitsContent = afterHabits.substring(0, nextSectionMatch.index);
-                        const restContent = afterHabits.substring(nextSectionMatch.index);
-                        
-                        const newContent = beforeHabits + '\n' + newHabitLine + habitsContent + restContent;
-                        await this.app.vault.modify(file, newContent);
-                    } else {
-                        // No next section, append to end
-                        const newContent = beforeHabits + '\n' + newHabitLine + afterHabits;
-                        await this.app.vault.modify(file, newContent);
-                    }
+                // Get current track from store
+                const track = this.getTrack(trackId);
+                if (!track) {
+                    console.warn(`Track ${trackId} not found in store`);
+                    return false;
                 }
+                
+                // Add habit to track's habits
+                const updatedHabits = {
+                    ...track.habits,
+                    [updates.addHabit.id]: updates.addHabit
+                };
+                
+                // Serialize all habits
+                const habitsSection = this.serializeHabits(updatedHabits);
+                
+                // Replace the Habits section in file
+                const content = await this.app.vault.read(file);
+                const newContent = PlannerParser.replaceSection(content, 'Habits', habitsSection);
+                await this.app.vault.modify(file, newContent);
             }
 
             // Handle removing a habit
             if (updates.removeHabitId) {
-                const content = await this.app.vault.read(file);
+                // Get current track from store
+                const track = this.getTrack(trackId);
+                if (!track) {
+                    console.warn(`Track ${trackId} not found in store`);
+                    return false;
+                }
                 
-                // Parse current habits
-                const habitSection = PlannerParser.extractSection(content, 'Habits');
-                const habits = PlannerParser.parseHabitSection(habitSection);
-                
-                const habit = habits[updates.removeHabitId];
-                if (!habit) {
+                // Check if habit exists
+                if (!track.habits[updates.removeHabitId]) {
                     console.warn(`Habit ${updates.removeHabitId} not found in track ${trackId}`);
                     return false;
                 }
-
-                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
-                const lineToRemove = `- ${habit.label}${rruleStr}`;
                 
-                // Remove the line (including newline)
-                const newContent = content.replace(new RegExp(`^${lineToRemove}$\n?`, 'm'), '');
+                // Remove habit from track's habits
+                const updatedHabits = { ...track.habits };
+                delete updatedHabits[updates.removeHabitId];
+                
+                // Serialize remaining habits
+                const habitsSection = this.serializeHabits(updatedHabits);
+                
+                // Replace the Habits section in file
+                const content = await this.app.vault.read(file);
+                const newContent = PlannerParser.replaceSection(content, 'Habits', habitsSection);
                 await this.app.vault.modify(file, newContent);
             }
 
@@ -535,31 +533,36 @@ export class TrackNoteService {
                 return false;
             }
 
-            const file = trackFiles.track;
-            const content = await this.app.vault.read(file);
+            // Get current track from store
+            const track = this.getTrack(trackId);
+            if (!track) {
+                console.warn(`Track ${trackId} not found in store`);
+                return false;
+            }
             
-            // Parse current habits
-            const habitSection = PlannerParser.extractSection(content, 'Habits');
-            const habits = PlannerParser.parseHabitSection(habitSection);
-            
-            const habit = habits[habitId];
+            const habit = track.habits[habitId];
             if (!habit) {
                 console.warn(`Habit ${habitId} not found in track ${trackId}`);
                 return false;
             }
 
-            // Update habit
-            const updatedLabel = updates.label ?? habit.label;
-            const updatedRRule = updates.rrule ?? habit.rrule;
+            // Update the habit in the data structure
+            const updatedHabits = {
+                ...track.habits,
+                [habitId]: {
+                    ...habit,
+                    label: updates.label ?? habit.label,
+                    rrule: updates.rrule ?? habit.rrule
+                }
+            };
             
-            const oldRRuleStr = habit.rrule ? ` (${habit.rrule})` : '';
-            const oldLine = `- ${habit.label}${oldRRuleStr}`;
+            // Serialize ALL habits back to text
+            const updatedHabitSection = this.serializeHabits(updatedHabits);
             
-            const newRRuleStr = updatedRRule ? ` (${updatedRRule})` : '';
-            const newLine = `- ${updatedLabel}${newRRuleStr}`;
-            
-            // Replace in content
-            const newContent = content.replace(oldLine, newLine);
+            // Replace the entire Habits section
+            const file = trackFiles.track;
+            const content = await this.app.vault.read(file);
+            const newContent = PlannerParser.replaceSection(content, 'Habits', updatedHabitSection);
             await this.app.vault.modify(file, newContent);
             
             await this.refreshTrack(trackId);
@@ -568,6 +571,15 @@ export class TrackNoteService {
             console.error('Error updating habit:', error);
             return false;
         }
+    }
+
+    private serializeHabits(habits: Record<string, { id: string; label: string; rrule: string }>): string {
+        let result = '';
+        for (const habit of Object.values(habits)) {
+            const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+            result += `- ${habit.label}${rruleStr}\n`;
+        }
+        return result;
     }
 
     /** Create a new project in a track */
@@ -835,5 +847,12 @@ export class TrackNoteService {
             )
 
         menu.showAtPosition({ x: evt.clientX, y: evt.clientY });
+    }
+
+    // ===== Clean up ===== //
+
+    /** Clean up resources */
+    destroy(): void {
+        this.cleanupFileWatchers();
     }
 }
