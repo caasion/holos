@@ -74,6 +74,7 @@ export interface Track {
     id: string;
     
     // Track meta
+    description: string;
     order: number;
     label: string;
     color: string;
@@ -85,7 +86,8 @@ export interface Track {
 	habits: Record<string, Habit>;
 	
     // Projects
-    activeProject: Project;
+    activeProjectId: string | null;
+    projects: Record<string, Project>;
 }
 
 
@@ -97,7 +99,7 @@ export interface Template {
   id: string;
   name: string;
   effectiveFrom: ISODate; 
-  tracks: Record<string, Track>; // <--- The "Whole Set"
+  tracks: string[];
 }
 
 export type Templates = Record<TDate, Template>;
@@ -144,6 +146,9 @@ export interface PluginSettings {
     refreshRemoteMs: number;
     lookaheadDays: number;
 
+    /* Track Settings */
+    trackFolder: string;
+
     /* Developer Mode */
     debug: boolean;
 }
@@ -156,6 +161,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
     autosaveDebounceMs: 200,
     sectionHeading: "Holos",
+
+    trackFolder: "Tracks",
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,
