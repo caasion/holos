@@ -3,3 +3,4 @@ import type { ISODate, Templates, Track } from "src/plugin/types";
 
 export const templates = writable<Templates>({});
 export const sortedTemplateDates = writable<ISODate[]>([]);
+export const parsedTracksContent = writable<Record<string, Track>>({});

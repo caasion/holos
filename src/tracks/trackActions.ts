@@ -12,12 +12,14 @@ import { EditTrackTimeModal } from './EditTrackTimeModal';
 import { EditJournalHeaderModal } from './EditJournalHeaderModal';
 import type { TemplateActions } from 'src/templates/templateActions';
 import { generateID } from 'src/plugin/helpers';
+import type { TrackNoteService } from './trackNote';
 
 export interface TrackActionsDeps {
     settings: PluginSettings;
     templateAct: TemplateActions;
     data: DataService;
     calendarPipelines: CalendarPipeline;
+    trackNoteService?: TrackNoteService;
 }
 
 export class TrackActions {
@@ -25,12 +27,14 @@ export class TrackActions {
     private templates: TemplateActions;
     private data: DataService;
     private calendarPipelines: CalendarPipeline;
+    private trackNoteService?: TrackNoteService;
 
     constructor(deps: TrackActionsDeps) {
         this.settings = deps.settings;
         this.templates = deps.templateAct;
         this.data = deps.data;
         this.calendarPipelines = deps.calendarPipelines;
+        this.trackNoteService = deps.trackNoteService;
     }
 
     // ===== Reading trakcs ===== /
@@ -63,15 +67,31 @@ export class TrackActions {
     /** Handles the creation of a new track (modal and creation). */
     public handleNewTrack(app: App, tDate: ISODate) {
         const nextOrder = Object.values(this.templates.getTemplate(tDate)?.tracks || {}).length;
-        new NewTrackModal(app, nextOrder, tDate, (track: Track) => {
-            this.templates.addTrackToTemplate(tDate, track.id, track);
+        new NewTrackModal(app, nextOrder, tDate, async (track: Track) => {
+            // Create track in file system
+            if (this.trackNoteService) {
+                const success = await this.trackNoteService.createTrack(track);
+                if (success) {
+                    new Notice(`Track "${track.label}" created successfully`);
+                } else {
+                    new Notice(`Failed to create track "${track.label}"`);
+                }
+            } else {
+                // Fallback to template actions if service not available
+                this.templates.addTrackToTemplate(tDate, track.id, track);
+            }
         }).open();
     }
     
     // ===== Modifying tracks ===== //
 
     /** Updates a habit's rrule within a track */
-    public updateHabitRRule(tDate: TDate, trackId: string, habitId: string, rrule: string): boolean {
+    public async updateHabitRRule(tDate: TDate, trackId: string, habitId: string, rrule: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateHabit(trackId, habitId, { rrule });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -96,7 +116,12 @@ export class TrackActions {
     }
 
     /** Updates a habit's label within a track. */
-    public updateHabitLabel(tDate: TDate, trackId: string, habitId: string, label: string): boolean {
+    public async updateHabitLabel(tDate: TDate, trackId: string, habitId: string, label: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateHabit(trackId, habitId, { label });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -121,16 +146,22 @@ export class TrackActions {
     }
 
     /** Adds a habit to a track. */
-    public addHabitToTrack(app: App, tDate: TDate, trackId: string) {
-        const currTemplate = this.templates.getTemplate(tDate);
-        if (!currTemplate || !currTemplate.tracks[trackId]) return;
-
+    public async addHabitToTrack(app: App, tDate: TDate, trackId: string) {
         const habitId = generateID("habit-");
         const newHabit = {
             id: habitId,
             label: "",
             rrule: ""
         };
+
+        if (this.trackNoteService) {
+            await this.trackNoteService.updateTrack(trackId, { addHabit: newHabit });
+            return;
+        }
+        
+        // Fallback to template actions
+        const currTemplate = this.templates.getTemplate(tDate);
+        if (!currTemplate || !currTemplate.tracks[trackId]) return;
 
         this.templates.setTemplate(tDate, {
             ...currTemplate,
@@ -148,7 +179,12 @@ export class TrackActions {
     }
 
     /** Removes a habit from a track. */
-    public removeHabitFromTrack(tDate: TDate, trackId: string, habitId: string): boolean {
+    public async removeHabitFromTrack(tDate: TDate, trackId: string, habitId: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateTrack(trackId, { removeHabitId: habitId });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -207,7 +243,12 @@ export class TrackActions {
     }
 
     /** Updates a track's label. */
-    public updateTrackLabel(tDate: TDate, trackId: string, label: string): boolean {
+    public async updateTrackLabel(tDate: TDate, trackId: string, label: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateTrack(trackId, { label });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -226,7 +267,12 @@ export class TrackActions {
     }
 
     /** Updates a track's time commitment (in minutes). */
-    public updateTrackTimeCommitment(tDate: TDate, trackId: string, timeCommitment: number): boolean {
+    public async updateTrackTimeCommitment(tDate: TDate, trackId: string, timeCommitment: number): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateTrack(trackId, { frontmatter: { time_commitment: timeCommitment } });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -245,7 +291,12 @@ export class TrackActions {
     }
 
     /** Updates a track's journal header. */
-    public updateTrackJournalHeader(tDate: TDate, trackId: string, journalHeader: string): boolean {
+    public async updateTrackJournalHeader(tDate: TDate, trackId: string, journalHeader: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            return await this.trackNoteService.updateTrack(trackId, { frontmatter: { journal_header: journalHeader } });
+        }
+        
+        // Fallback to template actions
         const currTemplate = this.templates.getTemplate(tDate);
         if (!currTemplate || !currTemplate.tracks[trackId]) return false;
 
@@ -344,14 +395,24 @@ export class TrackActions {
     public handleRemoveTrack(app: App, tDate: ISODate, id: string) {
         new ConfirmationModal(
             app, 
-            () => this.removeTrack(tDate, id),
+            async () => await this.removeTrack(tDate, id),
             "Remove",
             "Removing the track will not remove all cell contents."
         ).open();
     }
 
     /** Deletes an track and its cell contents */
-    public removeTrack(tDate: ISODate, id: string): boolean {
+    public async removeTrack(tDate: ISODate, id: string): Promise<boolean> {
+        if (this.trackNoteService) {
+            const success = await this.trackNoteService.deleteTrack(id);
+            if (success) {
+                new Notice('Track deleted successfully');
+                return true;
+            }
+            return false;
+        }
+        
+        // Fallback to template actions
         if (!this.templates.getTemplate(tDate)) return false;
 
         // WILL FIX LATER

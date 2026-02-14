@@ -2,20 +2,36 @@
 	import type { Habit, Track } from "src/plugin/types";
 	import type { TrackActions } from "./trackActions";
 	import TrackCard from "./TrackCard.svelte";
-  import { sampleTemplateData } from "src/templates/sampleTemplateData";
-	import { templates } from "src/templates/templatesStore";
   import type { App } from "obsidian";
+  import type { TrackNoteService } from "./trackNote";
 
   interface TracksProps {
     trackAct: TrackActions;
     app: App;
+    trackNoteService: TrackNoteService;
   }
 
-  let { trackAct, app }: TracksProps = $props();
+  let { trackAct, app, trackNoteService }: TracksProps = $props();
 
   const tDate = "2026-02-01";
 
-  const tracks = $derived($templates ? Object.values($templates[tDate].tracks) : [])
+  const trackStore = trackNoteService.parsedTracksContent;
+
+  const parsedTracks = $derived($trackStore);
+
+  // Load track content when component mounts
+  $effect(() => {
+    trackNoteService.loadAllTrackContent();
+  });
+
+  // Setup file watcher with cleanup
+  $effect(() => {
+    trackNoteService.setupFileWatchers();
+    
+    return () => {
+      trackNoteService.cleanupFileWatchers();
+    };
+  });
 </script>
 
 <div class="container">
@@ -30,7 +46,7 @@
     </button>
   </div>
 	<div class="card-container">
-    {#each tracks as track}
+    {#each Object.values(parsedTracks) as track}
     <TrackCard
       {track}
       onHabitRRuleEdit={(habitId, rrule) => trackAct.updateHabitRRule(tDate, track.id, habitId, rrule)}

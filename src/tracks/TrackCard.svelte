@@ -30,6 +30,13 @@
 
   // Convert habits record to array for iteration
   let habitsArray = $derived(Object.values(track.habits));
+  
+  // Get active project if one is set
+  let activeProject = $derived(
+    track.activeProjectId && track.projects[track.activeProjectId] 
+      ? track.projects[track.activeProjectId] 
+      : null
+  );
 </script>
 
 <div class="card" style={`background-color: ${track.color}10;`}>
@@ -91,11 +98,11 @@
   </div>
   
   <!-- Active Project Section -->
-  {#if track.activeProject}
+  {#if activeProject}
     <div class="section">
       <h4 class="section-title">Active Project</h4>
       <ProjectCard
-        project={track.activeProject}
+        project={activeProject}
         color={track.color}
         onEdit={onProjectEdit}
       />
