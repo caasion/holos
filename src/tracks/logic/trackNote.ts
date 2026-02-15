@@ -1,6 +1,6 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
-import type { PluginSettings, Project, Track } from "src/plugin/types";
+import type { Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 import { type Writable, get } from "svelte/store";
 import { NewTrackModal } from '../ui/NewTrackModal';
 import { EditTrackLabelModal } from '../ui/EditTrackLabelModal';
@@ -8,6 +8,7 @@ import { EditTrackTimeModal } from '../ui/EditTrackTimeModal';
 import { EditJournalHeaderModal } from '../ui/EditJournalHeaderModal';
 import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
 import { GenericEditModal } from 'src/templates/EditItemModal';
+import Planner from "src/planner/ui/Planner.svelte";
 
 interface TrackFiles {
     id: string | null;
@@ -363,169 +364,53 @@ export class TrackNoteService {
         return lines.join('\n');
     }
 
-    /** 
-     * Update track properties including label, description, frontmatter, and habits.
-     * Pass only the fields you want to update in the updates object.
-     */
-    async updateTrack(trackId: string, updates: {
-        label?: string;
-        description?: string;
-        frontmatter?: Record<string, any>;
-        addHabit?: { id: string; label: string; rrule: string };
-        removeHabitId?: string;
-    }): Promise<boolean> {
-        try {
-            const trackFiles = this.trackFileCache[trackId];
-            if (!trackFiles || !trackFiles.track) {
-                console.warn(`Track ${trackId} not found`);
-                return false;
-            }
+    /** Update track label, which updates the name of the track folder and the file, and invalidates the cache. */
+    async updateTrackLabel(trackId: string, label: string) {
+        const trackFiles = this.trackFileCache[trackId];
 
-            const file = trackFiles.track;
-
-            // Handle label update (requires file/folder rename)
-            if (updates.label) {
-                const trackFile = trackFiles.track;
-                const oldFolder = trackFile.parent;
-                if (!oldFolder) return false;
-
-                // Create new folder path
-                const newFolderPath = `${this.settings.trackFolder}/${updates.label}`;
-                const newTrackPath = `${newFolderPath}/${updates.label}.md`;
-
-                // Rename folder (this moves all contents)
-                await this.app.fileManager.renameFile(oldFolder, newFolderPath);
-
-                // Get the moved track file
-                const movedTrackFile = this.app.vault.getFileByPath(trackFile.path.replace(oldFolder.path, newFolderPath));
-                if (movedTrackFile) {
-                    // Rename the track file
-                    await this.app.fileManager.renameFile(movedTrackFile, newTrackPath);
-                }
-                
-                await this.invalidateCache();
-                return true;
-            }
-
-            // Handle frontmatter updates
-            if (updates.frontmatter) {
-                await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-                    for (const [key, value] of Object.entries(updates.frontmatter!)) {
-                        frontmatter[key] = value;
-                    }
-                });
-            }
-
-            // Handle description update
-            if (updates.description !== undefined) {
-                const content = await this.app.vault.read(file);
-                
-                // Split into parts
-                const lines = content.split('\n');
-                let frontmatterEnd = -1;
-                let inFrontmatter = false;
-                
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i] === '---') {
-                        if (!inFrontmatter) {
-                            inFrontmatter = true;
-                        } else {
-                            frontmatterEnd = i;
-                            break;
-                        }
-                    }
-                }
-
-                if (frontmatterEnd === -1) return false;
-
-                // Find first section header
-                let firstSectionIndex = -1;
-                for (let i = frontmatterEnd + 1; i < lines.length; i++) {
-                    if (lines[i].match(/^#{1,6}\s+/)) {
-                        firstSectionIndex = i;
-                        break;
-                    }
-                }
-
-                // Rebuild content
-                const newLines = lines.slice(0, frontmatterEnd + 1);
-                newLines.push('');
-                newLines.push(updates.description);
-                newLines.push('');
-                
-                if (firstSectionIndex !== -1) {
-                    newLines.push(...lines.slice(firstSectionIndex));
-                } else {
-                    // No sections found, add habits section
-                    newLines.push('## Habits');
-                    newLines.push('');
-                }
-
-                await this.app.vault.modify(file, newLines.join('\n'));
-            }
-
-            // Handle adding a habit
-            if (updates.addHabit) {
-                // Get current track from store
-                const track = this.getTrack(trackId);
-                if (!track) {
-                    console.warn(`Track ${trackId} not found in store`);
-                    return false;
-                }
-                
-                // Add habit to track's habits
-                const updatedHabits = {
-                    ...track.habits,
-                    [updates.addHabit.id]: updates.addHabit
-                };
-                
-                // Serialize all habits
-                const habitsSection = this.serializeHabits(updatedHabits);
-                
-                // Replace the Habits section in file
-                const content = await this.app.vault.read(file);
-                const newContent = PlannerParser.replaceSection(content, 'Habits', habitsSection);
-                await this.app.vault.modify(file, newContent);
-            }
-
-            // Handle removing a habit
-            if (updates.removeHabitId) {
-                // Get current track from store
-                const track = this.getTrack(trackId);
-                if (!track) {
-                    console.warn(`Track ${trackId} not found in store`);
-                    return false;
-                }
-                
-                // Check if habit exists
-                if (!track.habits[updates.removeHabitId]) {
-                    console.warn(`Habit ${updates.removeHabitId} not found in track ${trackId}`);
-                    return false;
-                }
-                
-                // Remove habit from track's habits
-                const updatedHabits = { ...track.habits };
-                delete updatedHabits[updates.removeHabitId];
-                
-                // Serialize remaining habits
-                const habitsSection = this.serializeHabits(updatedHabits);
-                
-                // Replace the Habits section in file
-                const content = await this.app.vault.read(file);
-                const newContent = PlannerParser.replaceSection(content, 'Habits', habitsSection);
-                await this.app.vault.modify(file, newContent);
-            }
-
-            await this.refreshTrack(trackId);
-            return true;
-        } catch (error) {
-            console.error('Error updating track:', error);
+        if (!trackFiles || !trackFiles.track) {
+            console.warn(`Track ${trackId} not found`);
             return false;
         }
+
+        const trackFile = trackFiles.track;
+        const oldFolder = trackFile.parent;
+        if (!oldFolder) {
+            throw new Error(`Error while editing updating track label of track ${trackId}: Old folder not found.`)
+        }
+        
+        const newFolderPath = `${this.settings.trackFolder}/${label}`;
+        const newTrackPath = `${newFolderPath}/${label}.md`;
+
+        await this.app.fileManager.renameFile(trackFile, newTrackPath);
+
+        await this.app.fileManager.renameFile(oldFolder, newFolderPath);
+
+        await this.invalidateCache();
     }
 
-    /** Update a habit's label or rrule */
-    async updateHabit(trackId: string, habitId: string, updates: { label?: string; rrule?: string }): Promise<boolean> {
+    /** Update track properties which affect the file frontmatter atomically. Refreshes the track. */
+    async updateTrackFrontmatter(trackId: string, frontmatter: Partial<TrackFileFrontmatter>) {
+        const trackFiles = this.trackFileCache[trackId];
+
+        if (!trackFiles || !trackFiles.track) {
+            console.warn(`Track ${trackId} not found`);
+            return false;
+        }
+
+        const trackFile = trackFiles.track;
+
+        await this.app.fileManager.processFrontMatter(trackFile, (oldFrontmatter) => {
+            for (const [key, value] of Object.entries(frontmatter)) {
+                oldFrontmatter[key] = value;
+            }
+        });
+
+        await this.refreshTrack(trackId);
+    }
+
+    /** Update track description. Refreshes the track. */
+    async updateTrackDescription(trackId: string, description: string) {
         try {
             const trackFiles = this.trackFileCache[trackId];
             if (!trackFiles || !trackFiles.track) {
@@ -533,53 +418,37 @@ export class TrackNoteService {
                 return false;
             }
 
-            // Get current track from store
-            const track = this.getTrack(trackId);
-            if (!track) {
-                console.warn(`Track ${trackId} not found in store`);
-                return false;
-            }
-            
-            const habit = track.habits[habitId];
-            if (!habit) {
-                console.warn(`Habit ${habitId} not found in track ${trackId}`);
-                return false;
-            }
-
-            // Update the habit in the data structure
-            const updatedHabits = {
-                ...track.habits,
-                [habitId]: {
-                    ...habit,
-                    label: updates.label ?? habit.label,
-                    rrule: updates.rrule ?? habit.rrule
-                }
-            };
-            
-            // Serialize ALL habits back to text
-            const updatedHabitSection = this.serializeHabits(updatedHabits);
-            
-            // Replace the entire Habits section
             const file = trackFiles.track;
             const content = await this.app.vault.read(file);
-            const newContent = PlannerParser.replaceSection(content, 'Habits', updatedHabitSection);
-            await this.app.vault.modify(file, newContent);
             
+            // Use a new helper function
+            const updatedContent = this.replaceFirstSection(content, newDescription);
+            
+            await this.app.vault.modify(file, updatedContent);
             await this.refreshTrack(trackId);
+            
             return true;
         } catch (error) {
-            console.error('Error updating habit:', error);
+            console.error('Error updating track description:', error);
             return false;
         }
     }
-
-    private serializeHabits(habits: Record<string, { id: string; label: string; rrule: string }>): string {
-        let result = '';
-        for (const habit of Object.values(habits)) {
-            const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
-            result += `- ${habit.label}${rruleStr}\n`;
+    /** Update track habits (addition, editing, or removal). Refreshes the track. */
+    async updateTrackHabits(trackId: string, habits: Record<string, Habit>) {
+        const trackFiles = this.trackFileCache[trackId];
+        if (!trackFiles || !trackFiles.track) {
+            console.warn(`Track ${trackId} not found`);
+            return false;
         }
-        return result;
+
+        const file = trackFiles.track;
+        const content = await this.app.vault.read(file);
+        
+        const newHabitsSection = PlannerParser.serializeHabits(habits);       
+        // Replace the Habits section in file
+        const newContent = PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        await this.app.vault.modify(file, newContent);
+        await this.refreshTrack(trackId);
     }
 
     /** Create a new project in a track */
@@ -695,37 +564,8 @@ export class TrackNoteService {
         }
     }
 
-    // ===== Modifying habits ===== //
-
-    /** Adds a habit to a track */
-    public async addHabitToTrack(trackId: string, habitLabel: string = "", habitRRule: string = ""): Promise<boolean> {
-        const habitId = `habit-${Date.now()}`;
-        const newHabit = {
-            id: habitId,
-            label: habitLabel,
-            rrule: habitRRule
-        };
-
-        return await this.updateTrack(trackId, { addHabit: newHabit });
-    }
-
-    /** Removes a habit from a track */
-    public async removeHabitFromTrack(trackId: string, habitId: string): Promise<boolean> {
-        return await this.updateTrack(trackId, { removeHabitId: habitId });
-    }
-
-    /** Updates a habit's rrule within a track */
-    public async updateHabitRRule(trackId: string, habitId: string, rrule: string): Promise<boolean> {
-        return await this.updateHabit(trackId, habitId, { rrule });
-    }
-
-    /** Updates a habit's label within a track */
-    public async updateHabitLabel(trackId: string, habitId: string, label: string): Promise<boolean> {
-        return await this.updateHabit(trackId, habitId, { label });
-    }
-
     // ===== Reading tracks ===== //
-
+    
     /** Gets track metadata by ID */
     public getTrack(id: string): Track | undefined {
         const tracks = get(this.parsedTracksContent);

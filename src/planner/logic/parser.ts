@@ -1,7 +1,7 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
 import { formatProgressDuration, formatTime } from "src/plugin/helpers";
-import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
+import type { DataService, Element, Habit, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
 import type { TemplateActions } from "src/templates/templateActions";
 
 export interface ParserDeps {
@@ -17,6 +17,8 @@ export class PlannerParser {
 		this.data = deps.data;
 		this.plannerActions = deps.plannerActions;
 	}
+
+    // ===== Reading - Extraction ===== //
 
     static extractFirstSection(content: string): string {
         const lines = content.replace(/^---[\s\S]*?---\s*/, '').split('\n');
@@ -61,6 +63,8 @@ export class PlannerParser {
         }
         return sectionLines.join('\n');
     }
+
+    // ===== Reading - Parsing ===== //
 
     static parseJournalSection(section: string): Record<string, string> {
         const lines = section.split('\n');
@@ -159,7 +163,7 @@ export class PlannerParser {
         return data;
     }
     
-    public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
+    parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
 	    const lines = section.split('\n');
 		const itemData: Record<ItemID, ItemData> = {};
 		let currItem: ItemData | null = null;
@@ -222,7 +226,7 @@ export class PlannerParser {
         return itemData;
     }
     
-    public static parseElementLine(line: string): Element {
+    static parseElementLine(line: string): Element {
 		let text = line.replace(/^\s+- /, '');
 
 	    let isTask = false;
@@ -273,8 +277,10 @@ export class PlannerParser {
 		};
     }
 
+    // ===== Writing - Serialization ===== // 
+
     // Serialize an Element back to a string
-    public static serializeElement(element: Element | Omit<Element, 'raw'>): string {
+    static serializeElement(element: Element | Omit<Element, 'raw'>): string {
         let line = '\t- ';
 
 		// Construct the raw string from the element properties when it is changed
@@ -330,7 +336,7 @@ export class PlannerParser {
     }
     
     // Serialize entire section back to string
-    public serializeSection(date: ISODate, items: Record<ItemID, ItemData>): string {
+    serializeSection(date: ISODate, items: Record<ItemID, ItemData>): string {
         const templateDate = this.plannerActions?.getTemplateDate(date) ?? date;
         const template = this.data.getTemplate(templateDate);
         
@@ -354,9 +360,20 @@ export class PlannerParser {
         
         return result;
     }
+
+    static serializeHabits(habits: Record<string, Habit>): string {
+            let result = '';
+            for (const habit of Object.values(habits)) {
+                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
+                result += `- ${habit.label}${rruleStr}\n`;
+            }
+            return result;
+        }
+
+    // ===== Writing - Replacing ===== //
     
     // Replace a section in the full file content
-    public static replaceSection(content: string, sectionHeading: string, newSectionContent: string): string {
+    static replaceSection(content: string, sectionHeading: string, newSectionContent: string): string {
         const lines = content.split('\n');
         let result: string[] = [];
         let inSection = false;
@@ -388,6 +405,53 @@ export class PlannerParser {
             result.push('');
             result.push(`## ${sectionHeading}`);
             result.push(newSectionContent);
+        }
+        
+        return result.join('\n');
+    }
+
+    static replaceFirstSection(content: string, newSectionContent: string) {
+        const lines = content.split('\n');
+        let result: string[] = [];
+        let frontmatterEnd = -1;
+        let inFrontmatter = false;
+        
+        // Find frontmatter end
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i] === '---') {
+                if (!inFrontmatter) {
+                    inFrontmatter = true;
+                } else {
+                    frontmatterEnd = i;
+                    break;
+                }
+            }
+        }
+        
+        if (frontmatterEnd === -1) {
+            console.warn('No frontmatter found');
+            return content;
+        }
+        
+        // Add frontmatter
+        result.push(...lines.slice(0, frontmatterEnd + 1));
+        result.push('');
+        
+        // Add new description
+        result.push(newDescription);
+        result.push('');
+        
+        // Find and add first section (and everything after)
+        let firstSectionIndex = -1;
+        for (let i = frontmatterEnd + 1; i < lines.length; i++) {
+            if (lines[i].match(/^#{1,6}\s+/)) {
+                firstSectionIndex = i;
+                break;
+            }
+        }
+        
+        if (firstSectionIndex !== -1) {
+            result.push(...lines.slice(firstSectionIndex));
         }
         
         return result.join('\n');
