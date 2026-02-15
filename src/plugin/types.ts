@@ -49,18 +49,13 @@ export interface Habit {
 	rrule: string;
 }
 
-interface RDateInterval {
-	startDate: ISODate;
-	endDate: ISODate
-	rrule?: string;
-}
-
 export interface Project {
 	id: string
 	label: string;
-	active: RDateInterval[]; // Project can be on and off
+	startDate: ISODate;
+    endDate?: ISODate;
+    habits: Record<string, Habit>; 
 	data: Element[];
-	habits: Record<string, Habit>; // can be empty
 }
 
 export interface CalendarMeta {
@@ -73,21 +68,14 @@ export interface CalendarMeta {
 
 export interface Track {
     id: string;
-    
-    // Track meta
-    description: string;
     order: number;
-    label: string;
     color: string;
-    // calendar: CalendarMeta;
-    
-    // Additional data
-    timeCommitment: number; // in hours
+    timeCommitment: number; 
 	journalHeader: string;
-	habits: Record<string, Habit>;
-	
-    // Projects
-    activeProjectId: string | null;
+    
+    label: string;
+    description: string;
+    activeProjectId: string[];
     projects: Record<string, Project>;
 }
 
@@ -98,8 +86,6 @@ export interface TrackFileFrontmatter {
     timeCommitment: number;
     journalHeader: string;
 }
-
-
 
 /* Plugin Template Datatypes */
 export type TDate = ISODate;
