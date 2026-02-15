@@ -44,6 +44,7 @@ export interface ItemData {
 /* NEW Plugin Template Datatypes */
 export interface Habit {
 	id: string;
+    raw: string;
 	label: string;
 	rrule: string;
 }
@@ -88,6 +89,14 @@ export interface Track {
     // Projects
     activeProjectId: string | null;
     projects: Record<string, Project>;
+}
+
+export interface TrackFileFrontmatter {
+    id: string;
+    order: number;
+    color: string;
+    timeCommitment: number;
+    journalHeader: string;
 }
 
 
