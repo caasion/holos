@@ -71,30 +71,62 @@ export class RRuleService {
         return `FREQ=DAILY;BYDAY=${days.join(',')}`
     }
 
-    static parseRRule(rrule: string): Set<number> {
-        const dowToNum: Record<string, number> = {
-            'MO': 1,
-            'TU': 2,
-            'WE': 3,
-            'TH': 4,
-            'FR': 5,
-            'SA': 6,
-            'SU': 7
+    static parseRRule(readableRRule: string): string {
+        // Normalize to lowercase for case-insensitive matching
+        const normalized = readableRRule.toLowerCase().trim();
+        
+        const dayMap: Record<string, string> = {
+            'mo': 'MO',
+            'tu': 'TU',
+            'we': 'WE',
+            'th': 'TH',
+            'fr': 'FR',
+            'sa': 'SA',
+            'su': 'SU'
+        };
+
+        // Handle special cases first
+        if (normalized === 'weekday' || normalized === 'weekdays') {
+            return 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR';
+        }
+        if (normalized === 'weekend' || normalized === 'weekends') {
+            return 'FREQ=DAILY;BYDAY=SA,SU';
         }
 
-        console.log(rrule)
+        // Parse individual days
+        // Split by comma and process each day
+        const dayPattern = /\b([a-z]{2,})[a-z]*/gi;
+        const matches = normalized.matchAll(dayPattern);
+        const days: string[] = [];
 
-        const parts = rrule.split(';');
-        if (!parts) return new Set([-1]);
+        for (const match of matches) {
+            const dayStr = match[1].toLowerCase();
+            
+            // Check for weekday/weekend again in context
+            if (dayStr.startsWith('weekday')) {
+                days.push('MO', 'TU', 'WE', 'TH', 'FR');
+                continue;
+            }
+            if (dayStr.startsWith('weekend')) {
+                days.push('SA', 'SU');
+                continue;
+            }
 
-        const [freqPart, dayPart] = parts;
-        if (!dayPart) return new Set([-1]);
+            // Match first 2 characters for day names
+            const first2 = dayStr.substring(0, 2);
+            if (dayMap[first2]) {
+                days.push(dayMap[first2]);
+            }
+        }
 
-        const dayCode = dayPart.split('=')[1];
-        if (!dayCode) return new Set([-1]);
+        // Remove duplicates and return
+        const uniqueDays = [...new Set(days)];
+        
+        if (uniqueDays.length === 0) {
+            // Default to daily if no days parsed
+            return 'FREQ=DAILY';
+        }
 
-        const days = dayCode.split(',').map(d => dowToNum[d]);
-
-        return new Set(days);
+        return `FREQ=DAILY;BYDAY=${uniqueDays.join(',')}`;
     }
 }

@@ -3,6 +3,7 @@
 import { formatProgressDuration, formatTime } from "src/plugin/helpers";
 import type { DataService, Element, Habit, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
 import type { TemplateActions } from "src/templates/templateActions";
+import { RRuleService } from "src/tracks/logic/rrule";
 
 export interface ParserDeps {
 	data: DataService;
@@ -100,21 +101,24 @@ export class PlannerParser {
 
     static parseHabitSection(section: string): Record<string, { id: string; label: string; rrule: string }> {
         const lines = section.split('\n');
-        const habits: Record<string, { id: string; label: string; rrule: string }> = {};
+        const habits: Record<string, Habit> = {};
 
         for (const line of lines) {
             // Skip empty lines or lines that aren't bullet points
             if (!line || !line.match(/^- /)) continue;
 
             let text = line.replace(/^- /, '').trim();
+            let label: string = text;
+            let rrule: string = '';
             
             // Extract rrule from pattern: Label (FREQ=DAILY;BYDAY=MO,WE,FR)
-            const rruleMatch = text.match(/\(([^)]+)\)$/);
-            let rrule = "";
-            
+            const rruleRegex = /\[([^\]]*)\]\s*$/;
+
+            const rruleMatch = text.match(rruleRegex);
             if (rruleMatch) {
-                rrule = rruleMatch[1];
-                text = text.replace(rruleMatch[0], '').trim();
+                const [fullMatch, rruleContent] = rruleMatch;
+                label = text.replace(fullMatch, '').trim();
+                rrule = RRuleService.parseRRule(rruleContent);
             }
 
             // Generate ID from label (lowercase, replace spaces with hyphens)
@@ -122,7 +126,8 @@ export class PlannerParser {
             
             habits[id] = {
                 id,
-                label: text,
+                raw: '- ' + text,
+                label,
                 rrule
             };
         }
@@ -364,8 +369,7 @@ export class PlannerParser {
     static serializeHabits(habits: Record<string, Habit>): string {
             let result = '';
             for (const habit of Object.values(habits)) {
-                const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
-                result += `- ${habit.label}${rruleStr}\n`;
+                result += habit.raw + '\n';
             }
             return result;
         }

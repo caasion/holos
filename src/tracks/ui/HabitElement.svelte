@@ -2,16 +2,16 @@
 	import type { Habit } from "src/plugin/types";
 	import RRuleEditor from "./RRuleEditor.svelte";
 	import { RRuleService } from "../logic/rrule";
+	import { isLabeledStatement } from "typescript";
 
 	interface HabitBlockProps {
 		habit: Habit;
 		color: string;
 		onDelete: () => void;
-		onRRuleEdit: (rrule: string) => void;
-		onLabelEdit: (label: string) => void;
+		onEdit: (habit: Habit) => void;
 	}
 
-	let { habit, color, onDelete, onRRuleEdit, onLabelEdit  }: HabitBlockProps = $props();
+	let { habit, color, onDelete, onEdit  }: HabitBlockProps = $props();
 
   let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -19,7 +19,7 @@
 
 	function startEdit() {
 		isEditing = true;
-    editText = habit.label;
+    editText = habit.raw.replace(/^- /, '').trim()
 	}
 
 	function cancelEdit() {
@@ -34,7 +34,27 @@
 			return;
 		}
 
-		onLabelEdit(editText);
+		let label: string = editText;
+		let rrule: string = habit.rrule; // Default to existing rrule
+
+		const rruleRegex = /\[([^\]]*)\]\s*$/;
+
+		const rruleMatch = editText.match(rruleRegex);
+		if (rruleMatch) {
+			console.log('matched!')
+			const [fullMatch, rruleContent] = rruleMatch;
+			label = editText.replace(fullMatch, '').trim();
+			rrule = RRuleService.parseRRule(rruleContent);
+		}
+
+		const newHabit: Habit = {
+			...habit,
+			raw: "- " + editText,
+			label,
+			rrule
+		};
+
+		onEdit(newHabit);
 		cancelEdit();
 	}
 
@@ -49,49 +69,8 @@
 			skipBlur = true;
 		}
 	}
-
-	let showRRuleEditor = $state<boolean>(false);
-	let popupPosition = $state<{ x: number; y: number; } | null>(null);
-
-	function handleTimeBadgeClick(e: MouseEvent) {
-		e.preventDefault();
-		e.stopPropagation();
-
-		const target = e.currentTarget as HTMLElement;
-		const rect = target.getBoundingClientRect();
-		
-		popupPosition = {
-			x: rect.left + window.scrollX,
-			y: rect.bottom + window.scrollY + 4,
-		}
-		showRRuleEditor = true;
-	}
-
-	function handleTimeBadgeSave(selectedDays: Set<number>) {
-		onRRuleEdit(RRuleService.serializeRRule(selectedDays));
-		handleTimeBadgeCancel();
-	}
-
-	function handleTimeBadgeCancel() {
-		popupPosition = null;
-		showRRuleEditor = false;
-	}
-
-	function handleClickOutside(e: MouseEvent) {
-		if (!showRRuleEditor) return;
-		
-		const target = e.target as HTMLElement;
-		const rruleEditor = target.closest('.rrule-editor-modal');
-		const timeBadge = target.closest('.time-badge');
-		
-		if (!rruleEditor && !timeBadge) {
-			handleTimeBadgeCancel();
-		}
-	}
 	
 </script>
-
-<svelte:window onclick={handleClickOutside} />
 
 <div class="task-element">
 	<div class="element-row">
@@ -106,23 +85,16 @@
 		{:else}
 			<div class="element-content" ondblclick={startEdit} role="button" tabindex="0">
 				<span>↻ {habit.label}</span>
-				
+
+				<div class="time-badge-container">
+					<div class="time-badge" style={`background-color: ${color}80;`}>
+						{RRuleService.formatRRule(habit.rrule)}
+					</div>
+				</div>
 			</div>
 			<button class="delete-btn" onclick={onDelete} title="Delete">×</button>
 		{/if}
-		<div class="time-badge-container">
-			<div class="time-badge" style={`background-color: ${color}80;`} onclick={handleTimeBadgeClick}>
-				{RRuleService.formatRRule(habit.rrule)}
-			</div>
-			{#if showRRuleEditor && popupPosition}
-				<RRuleEditor 
-					position={popupPosition}
-					selectedDays={RRuleService.parseRRule(habit.rrule)}
-					onSave={handleTimeBadgeSave}
-					onCancel={handleTimeBadgeCancel}
-				/>
-			{/if}
-		</div>
+		
 	</div>
 </div>
 

@@ -40,8 +40,9 @@
     const newHabitId = `habit-${Date.now()}`;
     const newHabit: Habit = {
       id: newHabitId,
+      raw: "- New Habit",
       label: "New Habit",
-      rrule: "FREQ=DAILY"
+      rrule: ""
     };
     
     const updatedHabits = {
