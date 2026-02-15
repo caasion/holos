@@ -28,6 +28,10 @@
   });
 </script>
 
+<pre>
+  {JSON.stringify(parsedTracks, null, 2)}
+</pre>
+
 <div class="container">
 	<h1>Tracks View</h1>
   <div class="header-row">
@@ -43,14 +47,10 @@
     {#each Object.values(parsedTracks) as track}
     <TrackCard
       {track}
-      onHabitRRuleEdit={(habitId, rrule) => trackNoteService.updateHabitRRule(track.id, habitId, rrule)}
-      onHabitLabelEdit={(habitId, label) => trackNoteService.updateHabitLabel(track.id, habitId, label)}
-      onHabitDelete={(habitId) => trackNoteService.removeHabitFromTrack(track.id, habitId)}
-      onHabitAdd={() => trackNoteService.addHabitToTrack(track.id)}
-      onProjectEdit={(project) => {/* TODO: Implement project switching */}}
-      onTrackLabelClick={() => trackNoteService.handleEditTrackLabel(track.id, track.label)}
-      onJournalHeaderDoubleClick={() => trackNoteService.handleEditJournalHeader(track.id, track.journalHeader)}
-      onTimeCommitmentDoubleClick={() => trackNoteService.handleEditTrackTime(track.id, track.timeCommitment)}
+      onLabelEdit={(label) => trackNoteService.updateTrackLabel(track.id, label)}
+      onDescriptionEdit={(description) => trackNoteService.updateTrackDescription(track.id, description)}
+      onFrontmatterEdit={(frontmatter) => trackNoteService.updateTrackFrontmatter(track.id, frontmatter)}
+      onHabitsEdit={(habits) => trackNoteService.updateTrackHabits(track.id, habits)}
     />
     {/each}
   </div>

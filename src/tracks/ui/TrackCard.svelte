@@ -2,30 +2,24 @@
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
 	import ProjectCard from "./ProjectCard.svelte";
 	import HabitBlock from "./HabitElement.svelte";
-	import type { Habit, Project, Track } from "src/plugin/types";
+	import type { Habit, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
+	import { EditTrackTimeModal } from "./EditTrackTimeModal";
+	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
 
   interface TrackCardProps {
     track: Track;
-    onHabitRRuleEdit: (habitId: string, label: string) => void;
-    onHabitLabelEdit: (habitId: string, label: string) => void;
-    onHabitDelete: (habitId: string) => void;
-    onHabitAdd: () => void;
-    onProjectEdit: (project: Project) => void;
-    onTrackLabelClick: () => void;
-    onJournalHeaderDoubleClick: () => void;
-    onTimeCommitmentDoubleClick: () => void;
+    onLabelEdit: (label: string) => void;
+    onDescriptionEdit: (label: string) => void;
+    onFrontmatterEdit: (frontmatter: Partial<TrackFileFrontmatter>) => void;
+    onHabitsEdit: (habits: Record<string, Habit>) => void;
   }
 
   let { 
     track,
-    onHabitRRuleEdit, 
-    onHabitLabelEdit, 
-    onHabitDelete, 
-    onHabitAdd,
-    onProjectEdit,
-    onTrackLabelClick,
-    onJournalHeaderDoubleClick,
-    onTimeCommitmentDoubleClick
+    onLabelEdit,
+    onDescriptionEdit,
+    onFrontmatterEdit,
+    onHabitsEdit,
   }: TrackCardProps = $props();
 
   // Convert habits record to array for iteration
@@ -37,6 +31,59 @@
       ? track.projects[track.activeProjectId] 
       : null
   );
+
+  function onTrackLabelClick() {
+    console.log("Planning to implement an editable textbox here, but not yet implemented!")
+  }
+
+  function onHabitAdd() {
+    const newHabitId = `habit-${Date.now()}`;
+    const newHabit: Habit = {
+      id: newHabitId,
+      label: "New Habit",
+      rrule: "FREQ=DAILY"
+    };
+    
+    const updatedHabits = {
+      ...track.habits,
+      [newHabitId]: newHabit
+    };
+    
+    onHabitsEdit(updatedHabits);
+  }
+
+  function onHabitDelete(habitId: string) {
+    const updatedHabits = { ...track.habits };
+    delete updatedHabits[habitId];
+    onHabitsEdit(updatedHabits);
+  }
+
+  function onHabitEdit(habitId: string, habit: Habit) {
+    const updatedHabits = {
+      ...track.habits,
+      [habitId]: habit
+    };
+
+    onHabitsEdit(updatedHabits);
+  }
+
+  function handleJournalHeaderEdit() {
+    new EditJournalHeaderModal(
+      this.app,
+      track.journalHeader,
+      (journalHeader) => onFrontmatterEdit({ journalHeader })
+    ).open();
+  }
+
+  function handleTimeCommitmentEdit() {
+    new EditTrackTimeModal(
+      this.app,
+      track.timeCommitment,
+      (timeMinutes) => onFrontmatterEdit({ timeCommitment: timeMinutes })
+    ).open();
+  }
+  
+  
 </script>
 
 <div class="card" style={`background-color: ${track.color}10;`}>
@@ -52,14 +99,14 @@
     <div class="card-data-container">
       <button 
         class="card-header clickable journal-icon" 
-        onclick={onJournalHeaderDoubleClick}
+        onclick={handleJournalHeaderEdit}
         title="Double-click to edit journal header"
       >
         📜
       </button>
       <button 
         class="clickable time-display"
-        onclick={onTimeCommitmentDoubleClick}
+        onclick={handleTimeCommitmentEdit}
         title="Double-click to edit time commitment"
       >
         <CircularProgress 
@@ -88,8 +135,7 @@
           {habit}
           color={track.color}
           onDelete={() => onHabitDelete(habit.id)}
-          onRRuleEdit={(rrule) => onHabitRRuleEdit(habit.id, rrule)}
-          onLabelEdit={(label) => onHabitLabelEdit(habit.id, label)}
+          onEdit={(habit) => onHabitEdit(habit.id, habit)}
         />
       {/each}
     {:else}
