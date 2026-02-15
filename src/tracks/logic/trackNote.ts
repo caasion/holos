@@ -68,7 +68,7 @@ export class TrackNoteService {
         
         for (const child of trackFolder.children) {
             if (child instanceof TFolder) {
-                const trackFiles = this.findFilesInFolder(child);
+                const trackFiles = await this.findFilesInFolder(child);
                 
                 // Only add to cache if we found a valid track with an ID
                 if (trackFiles.id && trackFiles.track) {
@@ -78,12 +78,31 @@ export class TrackNoteService {
         }
     }
 
-    private findFilesInFolder(folder: TFolder): TrackFiles {
+    private async findFilesInFolder(folder: TFolder): Promise<TrackFiles> {
         const files: TrackFiles = { id: null, track: null, activeProjectId: null, projects: {}}
 
         for (const file of folder.children) {
             if (file instanceof TFile && file.extension === "md") {
-                const cache = this.app.metadataCache.getFileCache(file);
+                let cache = this.app.metadataCache.getFileCache(file);
+
+                if (!cache) {
+                    await new Promise<void>(resolve => {
+                        const ref = this.app.metadataCache.on('changed', (changedFile) => {
+                            if (changedFile.path === file.path) {
+                                this.app.metadataCache.offref(ref);
+                                resolve();
+                            }
+                        });
+
+                        setTimeout(() => {
+                            this.app.metadataCache.offref(ref);
+                            resolve();
+                        }, 1000);
+                    })
+
+                    cache = this.app.metadataCache.getFileCache(file);
+                }
+
                 const frontmatter = cache?.frontmatter;
                 const id = frontmatter?.id ?? null;
                 if (!id) continue;
@@ -600,34 +619,6 @@ export class TrackNoteService {
                 new Notice(`Failed to create track "${track.label}"`);
             }
         }).open();
-    }
-
-    /** Handles editing a track's label with a modal */
-    public handleEditTrackLabel(trackId: string, currentLabel: string) {
-        new EditTrackLabelModal(
-            this.app,
-            currentLabel,
-            (label) => this.updateTrack(trackId, { label }),
-            () => this.handleRemoveTrack(trackId)
-        ).open();
-    }
-
-    /** Handles editing a track's time commitment with a modal */
-    public handleEditTrackTime(trackId: string, currentTimeMinutes: number) {
-        new EditTrackTimeModal(
-            this.app,
-            currentTimeMinutes,
-            (timeMinutes) => this.updateTrack(trackId, { frontmatter: { time_commitment: timeMinutes } })
-        ).open();
-    }
-
-    /** Handles editing a track's journal header with a modal */
-    public handleEditJournalHeader(trackId: string, currentHeader: string) {
-        new EditJournalHeaderModal(
-            this.app,
-            currentHeader,
-            (header) => this.updateTrack(trackId, { frontmatter: { journal_header: header } })
-        ).open();
     }
 
     /** Handles the deletion of a track (confirmation modal and deletion) */
