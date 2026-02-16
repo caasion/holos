@@ -75,7 +75,6 @@ export interface Track {
     
     label: string;
     description: string;
-    activeProjectId: string[];
     projects: Record<string, Project>;
 }
 

@@ -99,7 +99,7 @@ export class PlannerParser {
         return journalData;
     }
 
-    static parseHabitSection(section: string): Record<string, { id: string; label: string; rrule: string }> {
+    static parseHabitSection(section: string): Record<string, Habit> {
         const lines = section.split('\n');
         const habits: Record<string, Habit> = {};
 
