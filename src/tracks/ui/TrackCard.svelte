@@ -12,10 +12,12 @@
     onDescriptionEdit: (label: string) => void;
     onFrontmatterEdit: (frontmatter: Partial<TrackFileFrontmatter>) => void;
     onHabitsEdit: (habits: Record<string, Habit>) => void;
+    onDelete: () => void;
   }
 
   let { 
     track,
+    onDelete,
     onLabelEdit,
     onDescriptionEdit,
     onFrontmatterEdit,
@@ -89,14 +91,17 @@
 
 <div class="card" style={`background-color: ${track.color}10;`}>
   <div class="card-header-container">
-    <button 
-      class="card-header clickable track-title" 
-      style={`color: ${track.color};`}
-      onclick={onTrackLabelClick}
-      title="Click to edit track name or delete"
-    >
-      {track.label}
-    </button>
+    <div class="card-data-container">
+      <button 
+        class="card-header clickable track-title" 
+        style={`color: ${track.color};`}
+        ondblclick={onTrackLabelClick}
+        title="Click to edit track name or delete"
+      >
+        {track.label}
+      </button>
+    </div>
+    
     <div class="card-data-container">
       <button 
         class="card-header clickable journal-icon" 
@@ -114,6 +119,9 @@
           duration={track.timeCommitment}
           unit={'hr'}
         />
+      </button>
+        <button class="delete-btn" onclick={onDelete} title="Delete">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
   </div>
@@ -270,4 +278,18 @@
     border: none;
     padding: 0;
   }
+
+  .delete-btn {
+    background: transparent;
+		border: none;
+		color: var(--text-normal);
+		cursor: pointer;
+		font-size: 1.2em;
+		padding: 0 4px;
+		line-height: 1;
+	}
+
+	.delete-btn:hover {
+		color: var(--text-error);
+	}
 </style>
