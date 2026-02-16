@@ -111,21 +111,6 @@
     {/each}
   </div>
 
-  <ProjectCard 
-    project={
-      {
-        id: "project",
-        label: "Active Project",
-        startDate: "2026-02-10",
-        habits: {},
-        data: []
-      }
-    }
-
-    color={"#cccccc"}
-
-  />
-
   <h2>Schedule Tracks</h2>
 
 </div>
