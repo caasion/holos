@@ -1,6 +1,6 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
-import type { Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
+import type { Element, Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 import { type Writable, get } from "svelte/store";
 import { NewTrackModal } from '../ui/NewTrackModal';
 import { EditTrackLabelModal } from '../ui/EditTrackLabelModal';
@@ -581,6 +581,200 @@ export class TrackNoteService {
             console.error('Error deleting track:', error);
             return false;
         }
+    }
+
+    // ===== Project-level operations ===== //
+
+    /** Helper to update a project file with a content transformation */
+    private async updateProjectFile(
+        trackId: string,
+        projectId: string,
+        updater: (content: string) => string
+    ): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const updated = updater(content);
+        await this.app.vault.modify(projectFile, updated);
+        await this.refreshTrack(trackId);
+    }
+
+    /** Update project label (renames the file) */
+    async updateProjectLabel(trackId: string, projectId: string, label: string): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const newPath = `${projectFile.parent!.path}/${label}.md`;
+        await this.app.fileManager.renameFile(projectFile, newPath);
+        await this.refreshTrack(trackId);
+    }
+
+    /** Update project description (first section) */
+    async updateProjectDescription(trackId: string, projectId: string, description: string): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            return PlannerParser.replaceFirstSection(content, description);
+        });
+    }
+
+    /** Update project start date */
+    async updateProjectStartDate(trackId: string, projectId: string, startDate: string): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
+            fm.start_date = startDate;
+        });
+        await this.refreshTrack(trackId);
+    }
+
+    /** Update project end date */
+    async updateProjectEndDate(trackId: string, projectId: string, endDate: string | null): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
+            if (endDate) {
+                fm.end_date = endDate;
+            } else {
+                delete fm.end_date;
+            }
+        });
+        await this.refreshTrack(trackId);
+    }
+
+    /** Delete a project file */
+    async deleteProject(trackId: string, projectId: string): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        await this.app.vault.delete(projectFile);
+        await this.refreshTrack(trackId);
+    }
+
+    // ===== Project Habit operations ===== //
+
+    /** Add a new habit to a project */
+    async addProjectHabit(trackId: string, projectId: string): Promise<void> {
+        const newHabitId = `habit-${Date.now()}`;
+        const newHabit: Habit = {
+            id: newHabitId,
+            raw: "- New Habit",
+            label: "New Habit",
+            rrule: ""
+        };
+
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const habitSection = PlannerParser.extractSection(content, "Habits");
+            const habits = PlannerParser.parseHabitSection(habitSection);
+            
+            habits[newHabitId] = newHabit;
+            
+            const newHabitsSection = PlannerParser.serializeHabits(habits);
+            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        });
+    }
+
+    /** Update a specific habit in a project */
+    async updateProjectHabit(trackId: string, projectId: string, habitId: string, habit: Habit): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const habitSection = PlannerParser.extractSection(content, "Habits");
+            const habits = PlannerParser.parseHabitSection(habitSection);
+            
+            habits[habitId] = habit;
+            
+            const newHabitsSection = PlannerParser.serializeHabits(habits);
+            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        });
+    }
+
+    /** Delete a habit from a project */
+    async deleteProjectHabit(trackId: string, projectId: string, habitId: string): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const habitSection = PlannerParser.extractSection(content, "Habits");
+            const habits = PlannerParser.parseHabitSection(habitSection);
+            
+            delete habits[habitId];
+            
+            const newHabitsSection = PlannerParser.serializeHabits(habits);
+            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        });
+    }
+
+    // ===== Project Element/Task operations ===== //
+
+    /** Serialize elements array to string for Data section */
+    private serializeDataSection(elements: Element[]): string {
+        let result = '';
+        for (const element of elements) {
+            result += PlannerParser.serializeElement(element);
+        }
+        return result;
+    }
+
+    /** Add a new element (task) to a project */
+    async addProjectElement(trackId: string, projectId: string): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const dataSection = PlannerParser.extractSection(content, "Data");
+            const data = PlannerParser.parseDataSection(dataSection);
+            
+            // Add a new empty task
+            data.push({
+                raw: "\t- [ ] New Task",
+                text: "New Task",
+                isTask: true,
+                taskStatus: " ",
+                children: [],
+            });
+            
+            const newDataSection = this.serializeDataSection(data);
+            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+        });
+    }
+
+    /** Update a specific element in a project */
+    async updateProjectElement(trackId: string, projectId: string, elementIndex: number, updatedElement: Partial<Element>): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const dataSection = PlannerParser.extractSection(content, "Data");
+            const data = PlannerParser.parseDataSection(dataSection);
+            
+            if (elementIndex >= 0 && elementIndex < data.length) {
+                data[elementIndex] = { ...data[elementIndex], ...updatedElement };
+            }
+            
+            const newDataSection = this.serializeDataSection(data);
+            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+        });
+    }
+
+    /** Delete an element from a project */
+    async deleteProjectElement(trackId: string, projectId: string, elementIndex: number): Promise<void> {
+        await this.updateProjectFile(trackId, projectId, (content) => {
+            const dataSection = PlannerParser.extractSection(content, "Data");
+            const data = PlannerParser.parseDataSection(dataSection);
+            
+            if (elementIndex >= 0 && elementIndex < data.length) {
+                data.splice(elementIndex, 1);
+            }
+            
+            const newDataSection = this.serializeDataSection(data);
+            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+        });
     }
 
     // ===== Reading tracks ===== //
