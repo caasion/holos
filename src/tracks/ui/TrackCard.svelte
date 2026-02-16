@@ -1,44 +1,37 @@
 <script lang="ts">
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
 	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
-	import HabitBlock from "./HabitElement.svelte";
 	import type { Habit, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 	import { EditTrackTimeModal } from "./EditTrackTimeModal";
 	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
+	import type { HabitFunctions } from "./HabitElement.svelte";
 
-  interface TrackCardFunctions {
+  export interface TrackCardFunctions {
     onLabelEdit: (label: string) => void;
     onDescriptionEdit: (label: string) => void;
     onFrontmatterEdit: (frontmatter: Partial<TrackFileFrontmatter>) => void;
     onDelete: () => void;
-
     onProjectAdd: () => void;
-
-    projectFunctions: ProjectCardFunctions;
   }
-
 
   interface TrackCardProps {
     track: Track;
-    
+    trackFunctions: TrackCardFunctions;
+    createProjectFunctions: (projectId: string) => ProjectCardFunctions;
+    createHabitFunctions: (projectId: string) => ((habitId: string) => HabitFunctions);
   }
 
   let { 
     track,
-    onDelete,
-    onLabelEdit,
-    onDescriptionEdit,
-    onFrontmatterEdit,
-    onHabitsEdit,
+    trackFunctions,
+    createProjectFunctions,
+    createHabitFunctions
   }: TrackCardProps = $props();
 
-  // Convert habits record to array for iteration
-  let habitsArray = $derived(Object.values(track.habits));
-  
   // Get active project if one is set
   let activeProject = $derived(
-    track.activeProjectId && track.projects[track.activeProjectId] 
-      ? track.projects[track.activeProjectId] 
+    track.activeProjectId && track.projects[track.activeProjectId[0]]
+      ? track.projects[track.activeProjectId[0]]
       : null
   );
 
@@ -46,43 +39,11 @@
     console.log("Planning to implement an editable textbox here, but not yet implemented!")
   }
 
-  function onHabitAdd() {
-    const newHabitId = `habit-${Date.now()}`;
-    const newHabit: Habit = {
-      id: newHabitId,
-      raw: "- New Habit",
-      label: "New Habit",
-      rrule: ""
-    };
-    
-    const updatedHabits = {
-      ...track.habits,
-      [newHabitId]: newHabit
-    };
-    
-    onHabitsEdit(updatedHabits);
-  }
-
-  function onHabitDelete(habitId: string) {
-    const updatedHabits = { ...track.habits };
-    delete updatedHabits[habitId];
-    onHabitsEdit(updatedHabits);
-  }
-
-  function onHabitEdit(habitId: string, habit: Habit) {
-    const updatedHabits = {
-      ...track.habits,
-      [habitId]: habit
-    };
-
-    onHabitsEdit(updatedHabits);
-  }
-
   function handleJournalHeaderEdit() {
     new EditJournalHeaderModal(
       this.app,
       track.journalHeader,
-      (journalHeader) => onFrontmatterEdit({ journalHeader })
+      (journalHeader) => trackFunctions.onFrontmatterEdit({ journalHeader })
     ).open();
   }
 
@@ -90,7 +51,7 @@
     new EditTrackTimeModal(
       this.app,
       track.timeCommitment,
-      (timeMinutes) => onFrontmatterEdit({ timeCommitment: timeMinutes })
+      (timeMinutes) => trackFunctions.onFrontmatterEdit({ timeCommitment: timeMinutes })
     ).open();
   }
   
@@ -128,7 +89,7 @@
           unit={'hr'}
         />
       </button>
-        <button class="delete-btn" onclick={onDelete} title="Delete">
+        <button class="delete-btn" onclick={trackFunctions.onDelete} title="Delete">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
@@ -136,8 +97,26 @@
   
   <!-- Projects Section -->
   <div class="section">
-    <h4 class="section-title">Project</h4>
-    
+    <div class="section-header">
+      <h4 class="section-title">Projects</h4>
+      <button 
+        class="add-button" 
+        onclick={trackFunctions.onProjectAdd}
+        title="Add a new project"
+      >
+        +
+      </button>
+    </div>
+    {#if activeProject}
+      <ProjectCard
+        project={activeProject}
+        color={track.color}
+        projectFunctions={createProjectFunctions(activeProject.id)}
+        createHabitFunctions={createHabitFunctions(activeProject.id)}
+      />
+    {:else}
+      <div class="section-empty-state">No active project. Click + to add one.</div>
+    {/if}
   </div>
   
 </div>
@@ -215,7 +194,7 @@
     opacity: 0.8;
   }
 
-  .empty-habits-state {
+  .section-empty-state {
     color: var(--text-muted);
     font-size: 0.9em;
     font-style: italic;

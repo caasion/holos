@@ -9,12 +9,13 @@
 		onDelete: () => void;
 	}
 
-	interface HabitBlockProps extends HabitFunctions {
+	interface HabitBlockProps {
 		habit: Habit;
 		color: string;
+		habitFunctions: HabitFunctions;
 	}
 
-	let { habit, color, onDelete, onEdit  }: HabitBlockProps = $props();
+	let { habit, color, habitFunctions }: HabitBlockProps = $props();
 
   let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -57,7 +58,7 @@
 			rrule
 		};
 
-		onEdit(newHabit);
+		habitFunctions.onEdit(newHabit);
 		cancelEdit();
 	}
 
@@ -95,7 +96,7 @@
 					</div>
 				</div>
 			</div>
-			<button class="delete-btn" onclick={onDelete} title="Delete">×</button>
+			<button class="delete-btn" onclick={habitFunctions.onDelete} title="Delete">×</button>
 		{/if}
 		
 	</div>

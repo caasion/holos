@@ -1,29 +1,33 @@
 <script lang="ts">
 	import type { ISODate, Project } from "src/plugin/types";
 	import TaskElement from "src/planner/ui/grid/TaskElement.svelte";
-	import type { HabitFunctions } from "./HabitElement.svelte";
+	import HabitElement, { type HabitFunctions } from "./HabitElement.svelte";
 
 	export interface ProjectCardFunctions {
 		onLabelEdit: (label: string) => void;
-		onDescriptionEdit: (label: string) => void;
+		onDescriptionEdit: (description: string) => void;
 		onStartDateEdit: (date: ISODate) => void;
 		onEndDateEdit: (date: ISODate) => void;
 		onDelete: () => void;
 		
-		// These are not projects, but handled on the project level
+		// These are not project-specific, but handled at the project level
 		onHabitAdd: () => void;
 		onElementAdd: () => void;
-
-		habitFunctions: HabitFunctions;
-		// elementFunctions: TrackElementFunctions;
 	}
 
-	interface ProjectCardProps extends ProjectCardFunctions {
+	interface ProjectCardProps {
 		project: Project;
 		color: string;
+		projectFunctions: ProjectCardFunctions;
+		createHabitFunctions: (habitId: string) => HabitFunctions;
 	}
 
-	let { project, color, onLabelEdit, onDescriptionEdit, onStartDateEdit, onEndDateEdit, onDelete, onHabitAdd, onElementAdd }: ProjectCardProps = $props();
+	let { 
+		project, 
+		color, 
+		projectFunctions,
+		createHabitFunctions,
+	}: ProjectCardProps = $props();
 
 	// Check if project is currently active
 	function isProjectActive(): boolean {
@@ -41,12 +45,12 @@
 				{:else}
 					<span class="status-indicator inactive">○</span>
 				{/if}
-				<div ondblclick={onLabelEdit} aria-label="Double click to edit">
+				<div ondblclick={() => projectFunctions.onLabelEdit(project.label)} aria-label="Double click to edit" role="button" tabindex="0">
 					{project.label}
 				</div>
 				
 			</h4>
-			<button class="icon-button" onclick={onDelete} aria-label="Edit project">
+			<button class="icon-button" onclick={projectFunctions.onDelete} aria-label="Delete project">
 				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
 			</button>
 		</div>
@@ -58,7 +62,7 @@
       <h4 class="section-title">Habits</h4>
       <button 
         class="add-button" 
-        onclick={onHabitAdd}
+        onclick={projectFunctions.onHabitAdd}
         title="Add a new habit"
       >
         +
@@ -66,11 +70,10 @@
     </div>
     {#if Object.entries(project.habits).length > 0}
       {#each Object.values(project.habits) as habit}
-        <HabitBlock
+        <HabitElement
           {habit}
-          color={track.color}
-          onDelete={() => onHabitDelete(habit.id)}
-          onEdit={(habit) => onHabitEdit(habit.id, habit)}
+          {color}
+          habitFunctions={createHabitFunctions(habit.id)}
         />
       {/each}
     {:else}
@@ -78,13 +81,13 @@
     {/if}
   </div>
 
-	<!-- Habits Section -->
+	<!-- Tasks Section -->
   <div class="section">
     <div class="section-header">
       <h4 class="section-title">Tasks</h4>
       <button 
         class="add-button" 
-        onclick={onElementAdd}
+        onclick={projectFunctions.onElementAdd}
         title="Add a new task"
       >
         +
@@ -100,7 +103,6 @@
           onToggle={() => {}}
           onCancel={() => {}}
           onDelete={() => {}}
-          disabled={true}
         />
 			{/each}
 		{:else}

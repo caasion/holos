@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { Habit, Track } from "src/plugin/types";
-	import TrackCard from "./TrackCard.svelte";
+	import TrackCard, { type TrackCardFunctions } from "./TrackCard.svelte";
   import type { TrackNoteService } from "../logic/trackNote";
 	import { ConfirmationModal } from "src/plugin/ConfirmationModal";
 	import { App, Notice } from "obsidian";
-	import ProjectCard from "./ProjectCard.svelte";
+	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
+	import type { HabitFunctions } from "./HabitElement.svelte";
 
   interface TracksProps {
     app: App;
@@ -37,13 +38,50 @@
       async () => {
         const success = await trackNoteService.deleteTrack(trackId);
         if (success) {
-          await this.invalidateCache();
+          await trackNoteService.invalidateCache();
           new Notice('Track deleted successfully');
         }
       },
       "Remove",
       "Removing the track will delete the entire track folder and all its projects."
    ).open();
+  }
+
+  // Create track-level functions for a specific track
+  function createTrackFunctions(trackId: string): TrackCardFunctions {
+    return {
+      onLabelEdit: (label: string) => trackNoteService.updateTrackLabel(trackId, label),
+      onDescriptionEdit: (description: string) => trackNoteService.updateTrackDescription(trackId, description),
+      onFrontmatterEdit: (frontmatter) => trackNoteService.updateTrackFrontmatter(trackId, frontmatter),
+      onDelete: () => handleRemoveTrack(trackId),
+      onProjectAdd: () => {
+        // TODO: Implement project add
+        console.log('Add project to track:', trackId);
+      },
+    };
+  }
+
+  // Create project-level functions factory for a specific track
+  // Returns a function that takes projectId and returns ProjectCardFunctions
+  function createProjectFunctionsFactory(trackId: string) {
+    return (projectId: string): ProjectCardFunctions => ({
+      onLabelEdit: (label: string) => trackNoteService.updateProjectLabel(trackId, projectId, label),
+      onDescriptionEdit: (description: string) => trackNoteService.updateProjectDescription(trackId, projectId, description),
+      onStartDateEdit: (date) => trackNoteService.updateProjectStartDate(trackId, projectId, date),
+      onEndDateEdit: (date) => trackNoteService.updateProjectEndDate(trackId, projectId, date),
+      onDelete: () => trackNoteService.deleteProject(trackId, projectId),
+      onHabitAdd: () => trackNoteService.addProjectHabit(trackId, projectId),
+      onElementAdd: () => trackNoteService.addProjectElement(trackId, projectId),
+    });
+  }
+
+  // Create habit-level functions factory for a specific track
+  // Returns a function that takes projectId, which returns a function that takes habitId
+  function createHabitFunctionsFactory(trackId: string) {
+    return (projectId: string) => (habitId: string): HabitFunctions => ({
+      onEdit: (habit) => trackNoteService.updateProjectHabit(trackId, projectId, habitId, habit),
+      onDelete: () => trackNoteService.deleteProjectHabit(trackId, projectId, habitId),
+    });
   }
 </script>
 
@@ -63,16 +101,14 @@
     </button>
   </div>
 	<div class="card-container">
-    <!-- {#each Object.values(parsedTracks) as track}
-    <TrackCard
-      {track}
-      onDelete={() => handleRemoveTrack(track.id)}
-      onLabelEdit={(label) => trackNoteService.updateTrackLabel(track.id, label)}
-      onDescriptionEdit={(description) => trackNoteService.updateTrackDescription(track.id, description)}
-      onFrontmatterEdit={(frontmatter) => trackNoteService.updateTrackFrontmatter(track.id, frontmatter)}
-      onHabitsEdit={(habits) => trackNoteService.updateTrackHabits(track.id, habits)}
-    />
-    {/each} -->
+    {#each Object.values(parsedTracks) as track}
+      <TrackCard
+        {track}
+        trackFunctions={createTrackFunctions(track.id)}
+        createProjectFunctions={createProjectFunctionsFactory(track.id)}
+        createHabitFunctions={createHabitFunctionsFactory(track.id)}
+      />
+    {/each}
   </div>
 
   <ProjectCard 
