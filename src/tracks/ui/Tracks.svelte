@@ -2,12 +2,16 @@
 	import type { Habit, Track } from "src/plugin/types";
 	import TrackCard from "./TrackCard.svelte";
   import type { TrackNoteService } from "../logic/trackNote";
+	import { ConfirmationModal } from "src/plugin/ConfirmationModal";
+	import { App, Notice } from "obsidian";
+	import ProjectCard from "./ProjectCard.svelte";
 
   interface TracksProps {
+    app: App;
     trackNoteService: TrackNoteService;
   }
 
-  let { trackNoteService }: TracksProps = $props();
+  let { app, trackNoteService }: TracksProps = $props();
 
   const trackStore = trackNoteService.parsedTracksContent;
 
@@ -26,6 +30,21 @@
       trackNoteService.cleanupFileWatchers();
     };
   });
+
+  function handleRemoveTrack(trackId: string) {
+    new ConfirmationModal(
+      app, 
+      async () => {
+        const success = await trackNoteService.deleteTrack(trackId);
+        if (success) {
+          await this.invalidateCache();
+          new Notice('Track deleted successfully');
+        }
+      },
+      "Remove",
+      "Removing the track will delete the entire track folder and all its projects."
+   ).open();
+  }
 </script>
 
 <pre>
@@ -44,16 +63,32 @@
     </button>
   </div>
 	<div class="card-container">
-    {#each Object.values(parsedTracks) as track}
+    <!-- {#each Object.values(parsedTracks) as track}
     <TrackCard
       {track}
+      onDelete={() => handleRemoveTrack(track.id)}
       onLabelEdit={(label) => trackNoteService.updateTrackLabel(track.id, label)}
       onDescriptionEdit={(description) => trackNoteService.updateTrackDescription(track.id, description)}
       onFrontmatterEdit={(frontmatter) => trackNoteService.updateTrackFrontmatter(track.id, frontmatter)}
       onHabitsEdit={(habits) => trackNoteService.updateTrackHabits(track.id, habits)}
     />
-    {/each}
+    {/each} -->
   </div>
+
+  <ProjectCard 
+    project={
+      {
+        id: "project",
+        label: "Active Project",
+        startDate: "2026-02-10",
+        habits: {},
+        data: []
+      }
+    }
+
+    color={"#cccccc"}
+
+  />
 
   <h2>Schedule Tracks</h2>
 
