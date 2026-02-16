@@ -132,7 +132,7 @@ export class TrackNoteService {
         const trackFile = trackFiles.track ?? null;
         if (!trackFile) return null;
 
-        console.log(`Loading track ${id}`)
+        console.log(`Loading ${id}`)
 
         const cache = this.app.metadataCache.getFileCache(trackFile);
         const frontmatter = cache?.frontmatter;
@@ -144,14 +144,11 @@ export class TrackNoteService {
             return null;
         }
 
-        const { order, time_commitment, journal_header} = frontmatter;
+        const { order, timeCommitment, journalHeader} = frontmatter;
 
         const color = frontmatter.color ?? "#cccccc";
 
         const description = PlannerParser.extractFirstSection(trackContent);
-        
-        const habitSection = PlannerParser.extractSection(trackContent, "Habits");
-        const habits = PlannerParser.parseHabitSection(habitSection);
 
         // Projects
         const projects: Record<string, Project> = {};
@@ -165,30 +162,30 @@ export class TrackNoteService {
         
         return {
             id,
-            description,
             order,
-            label: trackFile.name,
             color,
-            timeCommitment: time_commitment,
-            journalHeader: journal_header,
-            habits,
-            activeProjectId: trackFiles.activeProjectId,
+            timeCommitment,
+            journalHeader,
+            
+            label: trackFile.name,
+            description,
             projects
-
         }
     }
 
     private async loadProjectContent(id: string, projectFile: TFile): Promise<Project | null> {
+        console.log(`Loading ${id}`)
+
         const cache = this.app.metadataCache.getFileCache(projectFile);
         const frontmatter = cache?.frontmatter;
         const projectContent = await this.app.vault.read(projectFile);
         
         if (!projectContent || !frontmatter) return null;
 
-        const { active } = frontmatter;
+        const { startDate, endDate } = frontmatter;
         
-        if (!active) {
-            console.warn(`${projectFile.name} is missing 'active' frontmatter field. Aborting.`);
+        if (!startDate) {
+            console.warn(`${projectFile.name} is missing 'startDate' frontmatter field. Aborting.`);
             return null;
         }
 
@@ -197,13 +194,14 @@ export class TrackNoteService {
         const habits = PlannerParser.parseHabitSection(habitSection);
 
         // Parse data section (tasks/events)
-        const dataSection = PlannerParser.extractSection(projectContent, "Data");
+        const dataSection = PlannerParser.extractSection(projectContent, "Tasks");
         const data = PlannerParser.parseDataSection(dataSection);
         
         return {
             id,
             label: projectFile.basename,
-            active,
+            startDate,
+            endDate,
             data,
             habits
         };
@@ -530,35 +528,6 @@ export class TrackNoteService {
         }
 
         return lines.join('\n');
-    }
-
-    /** Set active project for a track */
-    async setActiveProject(trackId: string, projectId: string | null): Promise<boolean> {
-        try {
-            const trackFiles = this.trackFileCache[trackId];
-            if (!trackFiles) {
-                console.warn(`Track ${trackId} not found`);
-                return false;
-            }
-
-            // Remove activeProject flag from all projects
-            for (const [id, projectFile] of Object.entries(trackFiles.projects)) {
-                const isActive = id === projectId;
-                await this.app.fileManager.processFrontMatter(projectFile, (frontmatter) => {
-                    if (isActive) {
-                        frontmatter.activeProject = true;
-                    } else {
-                        delete frontmatter.activeProject;
-                    }
-                });
-            }
-
-            await this.refreshTrack(trackId);
-            return true;
-        } catch (error) {
-            console.error('Error setting active project:', error);
-            return false;
-        }
     }
 
     /** Delete a track and its folder */
