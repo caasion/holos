@@ -1,18 +1,26 @@
 <script lang="ts">
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
-	import ProjectCard from "./ProjectCard.svelte";
+	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import HabitBlock from "./HabitElement.svelte";
 	import type { Habit, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 	import { EditTrackTimeModal } from "./EditTrackTimeModal";
 	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
 
-  interface TrackCardProps {
-    track: Track;
+  interface TrackCardFunctions {
     onLabelEdit: (label: string) => void;
     onDescriptionEdit: (label: string) => void;
     onFrontmatterEdit: (frontmatter: Partial<TrackFileFrontmatter>) => void;
-    onHabitsEdit: (habits: Record<string, Habit>) => void;
     onDelete: () => void;
+
+    onProjectAdd: () => void;
+
+    projectFunctions: ProjectCardFunctions;
+  }
+
+
+  interface TrackCardProps {
+    track: Track;
+    
   }
 
   let { 
@@ -126,43 +134,11 @@
     </div>
   </div>
   
-  <!-- Habits Section -->
+  <!-- Projects Section -->
   <div class="section">
-    <div class="section-header">
-      <h4 class="section-title">Habits</h4>
-      <button 
-        class="add-button" 
-        onclick={onHabitAdd}
-        title="Add a new habit"
-      >
-        +
-      </button>
-    </div>
-    {#if habitsArray.length > 0}
-      {#each habitsArray as habit}
-        <HabitBlock
-          {habit}
-          color={track.color}
-          onDelete={() => onHabitDelete(habit.id)}
-          onEdit={(habit) => onHabitEdit(habit.id, habit)}
-        />
-      {/each}
-    {:else}
-      <div class="empty-habits-state">No habits yet. Click + to add one.</div>
-    {/if}
+    <h4 class="section-title">Project</h4>
+    
   </div>
-  
-  <!-- Active Project Section -->
-  {#if activeProject}
-    <div class="section">
-      <h4 class="section-title">Active Project</h4>
-      <ProjectCard
-        project={activeProject}
-        color={track.color}
-        onEdit={onProjectEdit}
-      />
-    </div>
-  {/if}
   
 </div>
 

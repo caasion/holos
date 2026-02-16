@@ -4,11 +4,14 @@
 	import { RRuleService } from "../logic/rrule";
 	import { isLabeledStatement } from "typescript";
 
-	interface HabitBlockProps {
+	export interface HabitFunctions {
+		onEdit: (habit: Habit) => void;
+		onDelete: () => void;
+	}
+
+	interface HabitBlockProps extends HabitFunctions {
 		habit: Habit;
 		color: string;
-		onDelete: () => void;
-		onEdit: (habit: Habit) => void;
 	}
 
 	let { habit, color, onDelete, onEdit  }: HabitBlockProps = $props();

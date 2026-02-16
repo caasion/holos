@@ -1,28 +1,29 @@
 <script lang="ts">
-	import type { Project } from "src/plugin/types";
+	import type { ISODate, Project } from "src/plugin/types";
 	import TaskElement from "src/planner/ui/grid/TaskElement.svelte";
+	import type { HabitFunctions } from "./HabitElement.svelte";
 
-	interface ProjectCardProps {
+	export interface ProjectCardFunctions {
+		onLabelEdit: (label: string) => void;
+		onDescriptionEdit: (label: string) => void;
+		onStartDateEdit: (date: ISODate) => void;
+		onEndDateEdit: (date: ISODate) => void;
+		onDelete: () => void;
+		
+		// These are not projects, but handled on the project level
+		onHabitAdd: () => void;
+		onElementAdd: () => void;
+
+		habitFunctions: HabitFunctions;
+		// elementFunctions: TrackElementFunctions;
+	}
+
+	interface ProjectCardProps extends ProjectCardFunctions {
 		project: Project;
 		color: string;
-		onEdit?: (project: Project) => void;
 	}
 
-	let { project, color, onEdit }: ProjectCardProps = $props();
-
-	function handleEditProject() {
-		if (onEdit) {
-			onEdit(project);
-		}
-	}
-
-	// Format date range for display
-	function formatDateRange(startDate: string, endDate: string): string {
-		const start = new Date(startDate);
-		const end = new Date(endDate);
-		const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-		return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
-	}
+	let { project, color, onLabelEdit, onDescriptionEdit, onStartDateEdit, onEndDateEdit, onDelete, onHabitAdd, onElementAdd }: ProjectCardProps = $props();
 
 	// Check if project is currently active
 	function isProjectActive(): boolean {
