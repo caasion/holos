@@ -117,8 +117,8 @@
 
 <style>
     .container {
-        margin: 5%;
-        max-height: 80vh;
+      margin: 5%;
+      max-height: 80vh;
     }
 
 		.card-container {

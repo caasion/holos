@@ -29,11 +29,10 @@
   }: TrackCardProps = $props();
 
   // Get active project if one is set
-  let activeProject = $derived(
-    track.activeProjectId && track.projects[track.activeProjectId[0]]
-      ? track.projects[track.activeProjectId[0]]
-      : null
-  );
+  let activeProjects = $derived.by(() => {
+    const today = new Date().toISOString();
+    return Object.values(track.projects).filter(project => today >= project.startDate && project.endDate ? today <= project.endDate : true);
+  })
 
   function onTrackLabelClick() {
     console.log("Planning to implement an editable textbox here, but not yet implemented!")
@@ -107,16 +106,25 @@
         +
       </button>
     </div>
-    {#if activeProject}
-      <ProjectCard
-        project={activeProject}
-        color={track.color}
-        projectFunctions={createProjectFunctions(activeProject.id)}
-        createHabitFunctions={createHabitFunctions(activeProject.id)}
-      />
-    {:else}
-      <div class="section-empty-state">No active project. Click + to add one.</div>
-    {/if}
+    <div class="projects-section">
+      {#if activeProjects.length > 0}
+      <div class="active-projects-section">
+        {#each activeProjects as project}
+        <ProjectCard
+          project={project}
+          color={track.color}
+          projectFunctions={createProjectFunctions(project.id)}
+          createHabitFunctions={createHabitFunctions(project.id)}
+        />
+        {/each}
+      </div>
+      <!-- Project Creation Section -->
+      {:else}
+        <div class="section-empty-state empty-projects-section">No active project. Click + to add one.</div>
+      {/if}
+      
+    </div>
+    
   </div>
   
 </div>
@@ -247,4 +255,19 @@
 	.delete-btn:hover {
 		color: var(--text-error);
 	}
+
+  .projects-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .empty-projects-section {
+    grid-column: 1 / span 2;
+  }
+
+  .active-projects-section {
+    overflow-x: scroll;
+    display: flex;
+    gap: 4px;
+  }
 </style>
