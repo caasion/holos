@@ -26,12 +26,8 @@
 
 	// Check if project is currently active
 	function isProjectActive(): boolean {
-		const now = new Date();
-		return project.active.some(interval => {
-			const start = new Date(interval.startDate);
-			const end = new Date(interval.endDate);
-			return now >= start && now <= end;
-		});
+		const now = new Date().toISOString();
+		return now >= project.startDate && project.endDate ? now <= project.endDate : true 
 	}
 </script>
 
@@ -44,27 +40,56 @@
 				{:else}
 					<span class="status-indicator inactive">○</span>
 				{/if}
-				{project.label}
-			</h4>
-			<button class="icon-button" onclick={handleEditProject} aria-label="Edit project">
-				✏️
-			</button>
-		</div>
-		
-		<div class="project-meta">
-			{#each project.active as interval}
-				<div class="date-range">
-					📅 {formatDateRange(interval.startDate, interval.endDate)}
-					{#if interval.rrule}
-						<span class="rrule-tag">🔄</span>
-					{/if}
+				<div ondblclick={onLabelEdit} aria-label="Double click to edit">
+					{project.label}
 				</div>
-			{/each}
+				
+			</h4>
+			<button class="icon-button" onclick={onDelete} aria-label="Edit project">
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+			</button>
 		</div>
 	</div>
 
-	<div class="project-tasks">
-		{#if project.data.length > 0}
+	<!-- Habits Section -->
+  <div class="section">
+    <div class="section-header">
+      <h4 class="section-title">Habits</h4>
+      <button 
+        class="add-button" 
+        onclick={onHabitAdd}
+        title="Add a new habit"
+      >
+        +
+      </button>
+    </div>
+    {#if Object.entries(project.habits).length > 0}
+      {#each Object.values(project.habits) as habit}
+        <HabitBlock
+          {habit}
+          color={track.color}
+          onDelete={() => onHabitDelete(habit.id)}
+          onEdit={(habit) => onHabitEdit(habit.id, habit)}
+        />
+      {/each}
+    {:else}
+      <div class="section-empty-state">No habits yet. Click + to add one.</div>
+    {/if}
+  </div>
+
+	<!-- Habits Section -->
+  <div class="section">
+    <div class="section-header">
+      <h4 class="section-title">Tasks</h4>
+      <button 
+        class="add-button" 
+        onclick={onElementAdd}
+        title="Add a new task"
+      >
+        +
+      </button>
+    </div>
+    {#if project.data.length > 0}
 			{#each project.data as element, index}
         <TaskElement
           element={element}
@@ -78,9 +103,9 @@
         />
 			{/each}
 		{:else}
-			<div class="empty-state">No tasks yet</div>
+			<div class="section-empty-state">No tasks yet</div>
 		{/if}
-	</div>
+  </div>
 </div>
 
 <style>
@@ -145,39 +170,50 @@
 		background-color: var(--background-modifier-hover);
 	}
 
-	.project-meta {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		font-size: 0.85em;
-		color: var(--text-muted);
-	}
+	.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
 
-	.date-range {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
+  .section-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
 
-	.rrule-tag {
-		font-size: 0.9em;
-	}
-
-	.project-tasks {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.task-row {
-		padding: 4px 0;
-	}
-
-	.empty-state {
+	.section-empty-state {
 		padding: 12px;
 		text-align: center;
 		color: var(--text-muted);
 		font-style: italic;
 		font-size: 0.9em;
 	}
+
+	.add-button {
+		background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 25%;
+    width: 24px;
+    height: 24px;
+    font-size: 1.2em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.2s ease;
+		opacity: 0.8;
+  }
+
+  .add-button:hover {
+    opacity: 1;
+  }
 </style>
