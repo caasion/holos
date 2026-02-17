@@ -119,7 +119,6 @@
 		padding: 12px;
 		margin: 8px 0;
 		transition: box-shadow 0.2s ease;
-		width: 49%;
 	}
 
 	.project-card:hover {
