@@ -124,6 +124,7 @@
 		.card-container {
 			display: flex;
       flex-direction: column;
+      gap: 12px;
 		}
 
     .header-row {

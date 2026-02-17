@@ -104,11 +104,6 @@
 </div>
 
 <style>
-  section {
-    margin-top: 16px;
-    margin-bottom: 12px;
-  }
-
   .section-header {
     display: flex;
     justify-content: space-between;
