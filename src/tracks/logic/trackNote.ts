@@ -164,7 +164,7 @@ export class TrackNoteService {
             timeCommitment,
             journalHeader,
             
-            label: trackFile.name,
+            label: trackFile.basename,
             description,
             projects
         }
@@ -402,8 +402,15 @@ export class TrackNoteService {
         // File system & cache changes (flagged as internal)
         this.isUpdatingInternally = true;
         try {
-            await this.app.fileManager.renameFile(trackFile, newTrackPath);
+            // Rename folder first, then rename the track file within the renamed folder
             await this.app.fileManager.renameFile(oldFolder, newFolderPath);
+            
+            // After folder rename, get the updated file reference
+            const renamedTrackFile = this.app.vault.getFileByPath(`${newFolderPath}/${trackFile.name}`);
+            if (renamedTrackFile) {
+                await this.app.fileManager.renameFile(renamedTrackFile, newTrackPath);
+            }
+            
             await this.invalidateCache();
         } finally {
             this.isUpdatingInternally = false;
