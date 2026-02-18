@@ -7,6 +7,7 @@
 	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import type { HabitFunctions } from "./HabitElement.svelte";
 	import { NewTrackModal } from "./NewTrackModal";
+	import { getISODate } from "src/plugin/helpers";
 
   interface TracksProps {
     app: App;
@@ -42,7 +43,7 @@
     new NewTrackModal(
       app, 
       nextOrder, 
-      new Date().toISOString().split('T')[0], 
+      getISODate(new Date()),
       async (track: Track) => {
       const success = await trackNoteService.createTrack(track);
       if (success) {

@@ -1,14 +1,8 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
+import { getISODate } from "src/plugin/helpers";
 import type { Element, Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 import { type Writable, get } from "svelte/store";
-import { NewTrackModal } from '../ui/NewTrackModal';
-import { EditTrackLabelModal } from '../ui/EditTrackLabelModal';
-import { EditTrackTimeModal } from '../ui/EditTrackTimeModal';
-import { EditJournalHeaderModal } from '../ui/EditJournalHeaderModal';
-import { ConfirmationModal } from 'src/plugin/ConfirmationModal';
-import { GenericEditModal } from 'src/templates/EditItemModal';
-import Planner from "src/planner/ui/Planner.svelte";
 
 interface TrackFiles {
     id: string | null;
@@ -197,7 +191,7 @@ export class TrackNoteService {
         const habits = PlannerParser.parseHabitSection(habitSection);
 
         const taskSection = PlannerParser.extractSection(projectContent, "Tasks");
-        const tasks = PlannerParser.parseDataSection(taskSection);
+        const tasks = PlannerParser.parseTaskSection(taskSection);
         
         return {
             id,
@@ -521,7 +515,7 @@ export class TrackNoteService {
 
     newProjectFactory(trackId: string): Project {
         const id = crypto.randomUUID();
-        const today = new Date().toISOString()
+        const today = getISODate(new Date());
 
         // Get existing projects in this track
         const track = this.getTrack(trackId);
@@ -976,7 +970,7 @@ export class TrackNoteService {
 
         const content = await this.app.vault.read(projectFile);
         const dataSection = PlannerParser.extractSection(content, "Data");
-        const data = PlannerParser.parseDataSection(dataSection);
+        const data = PlannerParser.parseTaskSection(dataSection);
         
         data.push(newElement);
         
@@ -1021,7 +1015,7 @@ export class TrackNoteService {
 
         const content = await this.app.vault.read(projectFile);
         const dataSection = PlannerParser.extractSection(content, "Data");
-        const data = PlannerParser.parseDataSection(dataSection);
+        const data = PlannerParser.parseTaskSection(dataSection);
         
         if (elementIndex >= 0 && elementIndex < data.length) {
             data[elementIndex] = { ...data[elementIndex], ...updatedElement };
@@ -1073,7 +1067,7 @@ export class TrackNoteService {
 
         const content = await this.app.vault.read(projectFile);
         const dataSection = PlannerParser.extractSection(content, "Data");
-        const data = PlannerParser.parseDataSection(dataSection);
+        const data = PlannerParser.parseTaskSection(dataSection);
         
         if (elementIndex >= 0 && elementIndex < data.length) {
             data.splice(elementIndex, 1);

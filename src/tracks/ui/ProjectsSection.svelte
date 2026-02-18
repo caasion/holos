@@ -2,6 +2,7 @@
 	import type { Project } from "src/plugin/types";
 	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import type { HabitFunctions } from "./HabitElement.svelte";
+	import { getISODate } from "src/plugin/helpers";
 
   interface ProjectsSectionProps {
     projects: Record<string, Project>;
@@ -24,7 +25,7 @@
 
   // Filter projects by active/inactive status
   let activeProjects = $derived.by(() => {
-    const today = new Date().toISOString();
+    const today = getISODate(new Date());
     return Object.values(projects).filter(project => {
       const isAfterStart = today >= project.startDate;
       const isBeforeEnd = !project.endDate || today <= project.endDate;
@@ -33,7 +34,7 @@
   });
 
   let inactiveProjects = $derived.by(() => {
-    const today = new Date().toISOString();
+    const today = getISODate(new Date());
     return Object.values(projects).filter(project => {
       const isAfterStart = today >= project.startDate;
       const isBeforeEnd = !project.endDate || today <= project.endDate;

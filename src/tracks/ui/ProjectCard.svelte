@@ -2,6 +2,7 @@
 	import type { ISODate, Project } from "src/plugin/types";
 	import TaskElement from "src/planner/ui/grid/TaskElement.svelte";
 	import HabitElement, { type HabitFunctions } from "./HabitElement.svelte";
+	import { getISODate } from "src/plugin/helpers";
 
 	export interface ProjectCardFunctions {
 		onLabelEdit: (label: string) => void;
@@ -31,7 +32,7 @@
 
 	// Check if project is currently active
 	function isProjectActive(): boolean {
-		const now = new Date().toISOString();
+		const now = getISODate(new Date());
 		return now >= project.startDate && project.endDate ? now <= project.endDate : true 
 	}
 </script>

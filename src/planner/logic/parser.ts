@@ -135,9 +135,9 @@ export class PlannerParser {
         return habits;
     }
 
-    static parseDataSection(section: string): Element[] {
+    static parseTaskSection(section: string): Element[] {
         const lines = section.split('\n');
-        const data: Element[] = [];
+        const tasks: Element[] = [];
         let currentElement: Element | null = null;
 
         for (const line of lines) {
@@ -148,7 +148,7 @@ export class PlannerParser {
             if (line.match(/^\t?- /)) {
                 // Push previous element if exists
                 if (currentElement) {
-                    data.push(currentElement);
+                    tasks.push(currentElement);
                 }
                 
                 // Parse new element
@@ -162,10 +162,10 @@ export class PlannerParser {
 
         // Push last element
         if (currentElement) {
-            data.push(currentElement);
+            tasks.push(currentElement);
         }
 
-        return data;
+        return tasks;
     }
     
     parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
@@ -367,12 +367,12 @@ export class PlannerParser {
     }
 
     static serializeHabits(habits: Record<string, Habit>): string {
-            let result = '';
-            for (const habit of Object.values(habits)) {
-                result += habit.raw + '\n';
-            }
-            return result;
+        let result = '';
+        for (const habit of Object.values(habits)) {
+            result += habit.raw + '\n';
         }
+        return result;
+    }
 
     // ===== Writing - Replacing ===== //
     
@@ -442,7 +442,7 @@ export class PlannerParser {
         result.push('');
         
         // Add new description
-        result.push(newDescription);
+        result.push(newSectionContent);
         result.push('');
         
         // Find and add first section (and everything after)
