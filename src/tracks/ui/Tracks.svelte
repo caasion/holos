@@ -6,6 +6,7 @@
 	import { App, Notice } from "obsidian";
 	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import type { HabitFunctions } from "./HabitElement.svelte";
+	import { NewTrackModal } from "./NewTrackModal";
 
   interface TracksProps {
     app: App;
@@ -17,6 +18,8 @@
   const trackStore = trackNoteService.parsedTracksContent;
 
   const parsedTracks = $derived($trackStore);
+
+  $inspect(parsedTracks)
 
   // Load track content when component mounts
   $effect(() => {
@@ -32,19 +35,22 @@
     };
   });
 
-  function handleRemoveTrack(trackId: string) {
-    new ConfirmationModal(
+  /** Handles the creation of a new track (modal and creation) */
+  function handleNewTrack() {
+    const nextOrder = Object.keys(parsedTracks).length;
+    
+    new NewTrackModal(
       app, 
-      async () => {
-        const success = await trackNoteService.deleteTrack(trackId);
-        if (success) {
-          await trackNoteService.invalidateCache();
-          new Notice('Track deleted successfully');
-        }
-      },
-      "Remove",
-      "Removing the track will delete the entire track folder and all its projects."
-   ).open();
+      nextOrder, 
+      new Date().toISOString().split('T')[0], 
+      async (track: Track) => {
+      const success = await trackNoteService.createTrack(track);
+      if (success) {
+        new Notice(`Track "${track.label}" created successfully`);
+      } else {
+        new Notice(`Failed to create track "${track.label}"`);
+      }
+    }).open();
   }
 
   // Create track-level functions for a specific track
@@ -53,11 +59,8 @@
       onLabelEdit: (label: string) => trackNoteService.updateTrackLabel(trackId, label),
       onDescriptionEdit: (description: string) => trackNoteService.updateTrackDescription(trackId, description),
       onFrontmatterEdit: (frontmatter) => trackNoteService.updateTrackFrontmatter(trackId, frontmatter),
-      onDelete: () => handleRemoveTrack(trackId),
-      onProjectAdd: () => {
-        // TODO: Implement project add
-        console.log('Add project to track:', trackId);
-      },
+      onDelete: () => trackNoteService.deleteTrack(trackId),
+      onProjectAdd: () => trackNoteService.createProject(trackId, trackNoteService.newProjectFactory(trackId)),
     };
   }
 
@@ -95,7 +98,7 @@
     <h2>Manage Tracks</h2>
     <button 
       class="add-track-button"
-      onclick={() => trackNoteService.handleNewTrack()}
+      onclick={handleNewTrack}
     >
       + New Track
     </button>
@@ -103,6 +106,7 @@
 	<div class="card-container">
     {#each Object.values(parsedTracks) as track}
       <TrackCard
+        {app}
         {track}
         trackFunctions={createTrackFunctions(track.id)}
         createProjectFunctions={createProjectFunctionsFactory(track.id)}

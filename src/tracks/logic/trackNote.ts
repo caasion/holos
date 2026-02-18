@@ -493,23 +493,6 @@ export class TrackNoteService {
             return false;
         }
     }
-    /** Update track habits (addition, editing, or removal). Refreshes the track. */
-    async updateTrackHabits(trackId: string, habits: Record<string, Habit>) {
-        const trackFiles = this.trackFileCache[trackId];
-        if (!trackFiles || !trackFiles.track) {
-            console.warn(`Track ${trackId} not found`);
-            return false;
-        }
-
-        const file = trackFiles.track;
-        const content = await this.app.vault.read(file);
-        
-        const newHabitsSection = PlannerParser.serializeHabits(habits);       
-        // Replace the Habits section in file
-        const newContent = PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
-        await this.app.vault.modify(file, newContent);
-        await this.refreshTrack(trackId);
-    }
 
     /** Create a new project in a track */
     async createProject(trackId: string, project: Project): Promise<boolean> {
@@ -533,6 +516,47 @@ export class TrackNoteService {
         } catch (error) {
             console.error('Error creating project:', error);
             return false;
+        }
+    }
+
+    newProjectFactory(trackId: string): Project {
+        const id = crypto.randomUUID();
+        const today = new Date().toISOString()
+
+        // Get existing projects in this track
+        const track = this.getTrack(trackId);
+        const existingLabels = track ? Object.values(track.projects).map(p => p.label) : [];
+        
+        // Find all "New Project" variations
+        const newProjectPattern = /^New Project( (\d+))?$/;
+        const numbers: number[] = [];
+        
+        for (const label of existingLabels) {
+            const match = label.match(newProjectPattern);
+            if (match) {
+                if (match[2]) {
+                    // "New Project N" format
+                    numbers.push(parseInt(match[2], 10));
+                } else {
+                    // Just "New Project" - treat as 0
+                    numbers.push(0);
+                }
+            }
+        }
+        
+        // Determine the next label
+        let label = 'New Project';
+        if (numbers.length > 0) {
+            const maxNumber = Math.max(...numbers);
+            label = `New Project ${maxNumber + 1}`;
+        }
+
+        return {
+            id,
+            label,
+            startDate: today,
+            habits: {},
+            tasks: [],
         }
     }
 
@@ -588,6 +612,8 @@ export class TrackNoteService {
 
             // Delete the entire track folder (including all projects)
             await this.app.vault.delete(trackFolder, true);
+
+            new Notice('Track deleted successfully');
 
             return true;
         } catch (error) {
@@ -1108,82 +1134,6 @@ export class TrackNoteService {
         }
     
         return "";
-    }
-
-    // ===== Modal handlers ===== //
-
-    /** Handles the creation of a new track (modal and creation) */
-    public handleNewTrack() {
-        const tracks = get(this.parsedTracksContent);
-        const nextOrder = Object.keys(tracks).length;
-        
-        new NewTrackModal(this.app, nextOrder, new Date().toISOString().split('T')[0], async (track: Track) => {
-            const success = await this.createTrack(track);
-            if (success) {
-                new Notice(`Track "${track.label}" created successfully`);
-            } else {
-                new Notice(`Failed to create track "${track.label}"`);
-            }
-        }).open();
-    }
-
-    /** Handles the deletion of a track (confirmation modal and deletion) */
-    public handleRemoveTrack(trackId: string) {
-        new ConfirmationModal(
-            this.app, 
-            async () => {
-                const success = await this.deleteTrack(trackId);
-                if (success) {
-                    await this.invalidateCache();
-                    new Notice('Track deleted successfully');
-                }
-            },
-            "Remove",
-            "Removing the track will delete the entire track folder and all its projects."
-        ).open();
-    }
-
-    /** Creates and opens the context menu for a track */
-    public openTrackMenu(evt: MouseEvent, trackId: string) {
-        evt.preventDefault();
-        evt.stopPropagation();
-
-        const track = this.getTrack(trackId);
-        if (!track) return;
-
-        const menu = new Menu();
- 
-        menu
-            .addItem((i) =>
-                i.setTitle(`ID: ${trackId}`)
-                .setIcon("info")
-            )
-            .addSeparator()
-            .addItem((i) =>
-                i.setTitle("Edit")
-                .setIcon("pencil")
-                .onClick(() => {
-                    new GenericEditModal(this.app, track, async (newMeta) => {
-                        // Update multiple fields at once
-                        await this.updateTrack(trackId, {
-                            frontmatter: {
-                                color: newMeta.color,
-                                time_commitment: newMeta.timeCommitment,
-                                journal_header: newMeta.journalHeader
-                            }
-                        });
-                    }).open();
-                })
-            )
-            .addItem((i) =>
-                i.setTitle("Remove")
-                .setIcon("x")
-                .onClick(() => {
-                    this.handleRemoveTrack(trackId);
-                })
-            )
-
-        menu.showAtPosition({ x: evt.clientX, y: evt.clientY });
     }
 
     // ===== Clean up ===== //

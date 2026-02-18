@@ -6,6 +6,8 @@
 	import { EditTrackTimeModal } from "./EditTrackTimeModal";
 	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
 	import type { HabitFunctions } from "./HabitElement.svelte";
+	import { Notice, type App } from "obsidian";
+	import { ConfirmationModal } from "src/plugin/ConfirmationModal";
 
   export interface TrackCardFunctions {
     onLabelEdit: (label: string) => void;
@@ -16,6 +18,7 @@
   }
 
   interface TrackCardProps {
+    app: App;
     track: Track;
     trackFunctions: TrackCardFunctions;
     createProjectFunctions: (projectId: string) => ProjectCardFunctions;
@@ -23,6 +26,7 @@
   }
 
   let { 
+    app,
     track,
     trackFunctions,
     createProjectFunctions,
@@ -35,7 +39,7 @@
 
   function handleJournalHeaderEdit() {
     new EditJournalHeaderModal(
-      this.app,
+      app,
       track.journalHeader,
       (journalHeader) => trackFunctions.onFrontmatterEdit({ journalHeader })
     ).open();
@@ -43,13 +47,20 @@
 
   function handleTimeCommitmentEdit() {
     new EditTrackTimeModal(
-      this.app,
+      app,
       track.timeCommitment,
       (timeMinutes) => trackFunctions.onFrontmatterEdit({ timeCommitment: timeMinutes })
     ).open();
   }
   
-  
+  function handleRemoveTrack() {
+    new ConfirmationModal(
+      app, 
+      () => trackFunctions.onDelete(),
+      "Remove",
+      "Removing the track will delete the entire track folder and all its projects."
+   ).open();
+  }
 </script>
 
 <div class="card" style={`background-color: ${track.color}10;`}>
@@ -79,11 +90,11 @@
         title="Double-click to edit time commitment"
       >
         <CircularProgress 
-          duration={track.timeCommitment}
+          duration={track.timeCommitment / 60}
           unit={'hr'}
         />
       </button>
-        <button class="delete-btn" onclick={trackFunctions.onDelete} title="Delete">
+        <button class="delete-btn" onclick={handleRemoveTrack} title="Delete">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
