@@ -92,13 +92,9 @@
           createHabitFunctions={createHabitFunctions(project.id)}
         />
       {/each}
-    {:else if activeProjects.length === 0}
-      <div class="section-empty-state empty-projects-section">
-        No active projects. Click + to add one.
-      </div>
     {:else}
-      <div class="section-empty-state empty-projects-section">
-        No inactive projects.
+      <div class="section-empty-state">
+        No active projects. Click + to add one.
       </div>
     {/if}
   </div>
@@ -195,6 +191,7 @@
     font-style: italic;
     border: 1px dashed var(--background-modifier-border);
     border-radius: 8px;
+    grid-column: span 3;
   }
 
   

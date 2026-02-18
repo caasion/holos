@@ -3,6 +3,7 @@
 	import TaskElement from "src/planner/ui/grid/TaskElement.svelte";
 	import HabitElement, { type HabitFunctions } from "./HabitElement.svelte";
 	import { getISODate } from "src/plugin/helpers";
+	import { format, parseISO } from "date-fns";
 
 	export interface ProjectCardFunctions {
 		onLabelEdit: (label: string) => void;
@@ -35,6 +36,13 @@
 		const now = getISODate(new Date());
 		return now >= project.startDate && project.endDate ? now <= project.endDate : true 
 	}
+
+	// Get formatted date range string
+	function getDateRange(): string {
+		const start = format(parseISO(project.startDate), 'MMM dd, yyyy');
+		const end = project.endDate ? format(parseISO(project.endDate), 'MMM dd, yyyy') : 'now';
+		return `${start} — ${end}`;
+	}
 </script>
 
 <div class="project-card" style={`border-color: ${color};`}>
@@ -54,6 +62,9 @@
 			<button class="icon-button" onclick={projectFunctions.onDelete} aria-label="Delete project">
 				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
 			</button>
+		</div>
+		<div class="project-date-range">
+			📅 {getDateRange()}
 		</div>
 	</div>
 
@@ -135,6 +146,11 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 6px;
+	}
+
+	.project-date-range {
+		font-size: 0.85em;
+		color: var(--text-muted);
 	}
 
 	.project-title {

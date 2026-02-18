@@ -564,7 +564,7 @@ export class TrackNoteService {
         lines.push('  - holos/project');
         lines.push(`id: ${project.id}`);
         lines.push(`startDate: ${project.startDate}`);
-        lines.push(`endDate: ${project.startDate ?? ''}`);
+        lines.push(`endDate: ${project.endDate ?? ''}`);
         lines.push('---');
         lines.push('');
 
@@ -706,7 +706,7 @@ export class TrackNoteService {
         this.isUpdatingInternally = true;
         try {
             await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
-                fm.start_date = startDate;
+                fm.startDate = startDate;
             });
         } finally {
             this.isUpdatingInternally = false;
@@ -745,9 +745,9 @@ export class TrackNoteService {
         try {
             await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
                 if (endDate) {
-                    fm.end_date = endDate;
+                    fm.endDate = endDate;
                 } else {
-                    delete fm.end_date;
+                    delete fm.endDate;
                 }
             });
         } finally {
