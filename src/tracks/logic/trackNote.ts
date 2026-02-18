@@ -193,16 +193,15 @@ export class TrackNoteService {
         const habitSection = PlannerParser.extractSection(projectContent, "Habits");
         const habits = PlannerParser.parseHabitSection(habitSection);
 
-        // Parse data section (tasks/events)
-        const dataSection = PlannerParser.extractSection(projectContent, "Tasks");
-        const data = PlannerParser.parseDataSection(dataSection);
+        const taskSection = PlannerParser.extractSection(projectContent, "Tasks");
+        const tasks = PlannerParser.parseDataSection(taskSection);
         
         return {
             id,
             label: projectFile.basename,
             startDate,
             endDate,
-            data,
+            tasks,
             habits
         };
     }
@@ -515,10 +514,10 @@ export class TrackNoteService {
         }
         lines.push('');
 
-        // Data section
-        lines.push('## Data');
+        // Tasks section
+        lines.push('## Tasks');
         lines.push('');
-        for (const element of project.data) {
+        for (const element of project.tasks) {
             const taskMarker = element.isTask ? `[${element.taskStatus || ' '}] ` : '';
             lines.push(`- ${taskMarker}${element.text}`);
             

@@ -93,8 +93,8 @@
         +
       </button>
     </div>
-    {#if project.data.length > 0}
-			{#each project.data as element, index}
+    {#if project.tasks.length > 0}
+			{#each project.tasks as element, index}
         <TaskElement
           element={element}
           index={index}
