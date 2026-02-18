@@ -18,7 +18,7 @@ export class EditTrackTimeModal extends Modal {
             .setDesc("The planned daily commitment (in hours) per day. Set to 0 for none.")
             .addSlider(s => {
                 s.setValue(currentTimeMinutes / 60)
-                s.setLimits(0, 12, 0.5)
+                s.setLimits(0, 12, 0.25)
                 s.setDynamicTooltip()
                 s.onChange(v => timeMinutes = v * 60)
             })

@@ -359,13 +359,13 @@ export class TrackNoteService {
 
         // Frontmatter
         lines.push('---');
+        lines.push('tags:');
+        lines.push('  - holos/track');
         lines.push(`id: ${track.id}`);
         lines.push(`order: ${track.order}`);
         lines.push(`color: ${track.color}`);
-        lines.push(`time_commitment: ${track.timeCommitment}`);
-        lines.push(`journal_header: ${track.journalHeader}`);
-        lines.push('tags:');
-        lines.push('  - holos/track');
+        lines.push(`timeCommitment: ${track.timeCommitment}`);
+        lines.push(`journalHeader: ${track.journalHeader}`);
         lines.push('---');
         lines.push('');
 
@@ -373,14 +373,6 @@ export class TrackNoteService {
         if (track.description) {
             lines.push(track.description);
             lines.push('');
-        }
-
-        // Habits section
-        lines.push('## Habits');
-        lines.push('');
-        for (const habit of Object.values(track.habits)) {
-            const rruleStr = habit.rrule ? ` (${habit.rrule})` : '';
-            lines.push(`- ${habit.label}${rruleStr}`);
         }
 
         return lines.join('\n');
@@ -550,10 +542,11 @@ export class TrackNoteService {
 
         // Frontmatter
         lines.push('---');
-        lines.push(`id: ${project.id}`);
-        lines.push(`active: ${project.active}`);
         lines.push('tags:');
         lines.push('  - holos/project');
+        lines.push(`id: ${project.id}`);
+        lines.push(`startDate: ${project.startDate}`);
+        lines.push(`endDate: ${project.startDate ?? ''}`);
         lines.push('---');
         lines.push('');
 

@@ -11,12 +11,13 @@ export class NewTrackModal extends Modal {
         let track: Track = {
             id: generateID("track-"),
             order: order,
-            label: "",
             color: "#cccccc",
             timeCommitment: 0,
             journalHeader: "",
-            habits: {},
-            activeProject: null as any,
+
+            label: "",
+            description: "",
+            projects: {},
         };
         
         new Setting(contentEl).setName("Create New Track").setHeading();
@@ -56,7 +57,7 @@ export class NewTrackModal extends Modal {
             .setDesc("The planned daily commitment (in hours) per day. Set to 0 for none.")
             .addSlider(s => {
                 s.setValue(0)
-                s.setLimits(0, 12, 1)
+                s.setLimits(0, 12, 0.25)
                 s.setDynamicTooltip()
                 s.onChange(v => track.timeCommitment = v * 60)
             })
