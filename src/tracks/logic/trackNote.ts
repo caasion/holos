@@ -31,6 +31,9 @@ export class TrackNoteService {
 
     private trackFileCache: Record<string, TrackFiles> = {};
     
+    // Flag to prevent file watcher from overwriting our own programmatic updates
+    private isUpdatingInternally = false;
+    
     // File watcher references
     private fileModifyRef: EventRef | null = null;
     private fileCreateRef: EventRef | null = null;
@@ -260,11 +263,14 @@ export class TrackNoteService {
 
         // Watch for file modifications
         this.fileModifyRef = this.app.vault.on('modify', async (file) => {
+            // Skip if we're making the change internally
+            if (this.isUpdatingInternally) return;
+            
             if (!(file instanceof TFile) || !this.isInTrackFolder(file.path)) return;
 
             const trackId = this.findTrackIdByPath(file.path);
             if (trackId) {
-                console.log(`Track file modified: ${file.path}, refreshing track ${trackId}`);
+                console.log(`Track file modified externally: ${file.path}, refreshing track ${trackId}`);
                 await this.refreshTrack(trackId);
             }
         });
@@ -320,7 +326,7 @@ export class TrackNoteService {
         }
     }
 
-    // ===== Write operations ===== // 
+    // ===== Track-level operation ===== // 
 
     /** Create a new track with folder structure */
     async createTrack(track: Track): Promise<boolean> {
@@ -380,7 +386,7 @@ export class TrackNoteService {
         return lines.join('\n');
     }
 
-    /** Update track label, which updates the name of the track folder and the file, and invalidates the cache. */
+    /** Update track label, which updates the name of the track folder and the file. */
     async updateTrackLabel(trackId: string, label: string) {
         const trackFiles = this.trackFileCache[trackId];
 
@@ -398,14 +404,29 @@ export class TrackNoteService {
         const newFolderPath = `${this.settings.trackFolder}/${label}`;
         const newTrackPath = `${newFolderPath}/${label}.md`;
 
-        await this.app.fileManager.renameFile(trackFile, newTrackPath);
+        // Instant responsive UI change
+        this.parsedTracksContent.update(tracks => ({
+            ...tracks,
+            [trackId]: {
+                ...tracks[trackId],
+                label
+            }
+        }));
 
-        await this.app.fileManager.renameFile(oldFolder, newFolderPath);
+        // File system & cache changes (flagged as internal)
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.fileManager.renameFile(trackFile, newTrackPath);
+            await this.app.fileManager.renameFile(oldFolder, newFolderPath);
+            await this.invalidateCache();
+        } finally {
+            this.isUpdatingInternally = false;
+        }
 
-        await this.invalidateCache();
+        return true;
     }
 
-    /** Update track properties which affect the file frontmatter atomically. Refreshes the track. */
+    /** Update track properties which affect the file frontmatter atomically. */
     async updateTrackFrontmatter(trackId: string, frontmatter: Partial<TrackFileFrontmatter>) {
         const trackFiles = this.trackFileCache[trackId];
 
@@ -416,16 +437,35 @@ export class TrackNoteService {
 
         const trackFile = trackFiles.track;
 
-        await this.app.fileManager.processFrontMatter(trackFile, (oldFrontmatter) => {
-            for (const [key, value] of Object.entries(frontmatter)) {
-                oldFrontmatter[key] = value;
-            }
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.fileManager.processFrontMatter(trackFile, (oldFrontmatter) => {
+                for (const [key, value] of Object.entries(frontmatter)) {
+                    oldFrontmatter[key] = value;
+                }
+            });
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - no race condition now
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    ...frontmatter
+                }
+            };
         });
 
-        await this.refreshTrack(trackId);
+        return true;
     }
 
-    /** Update track description. Refreshes the track. */
+    /** Update track description. */
     async updateTrackDescription(trackId: string, description: string) {
         try {
             const trackFiles = this.trackFileCache[trackId];
@@ -437,11 +477,23 @@ export class TrackNoteService {
             const file = trackFiles.track;
             const content = await this.app.vault.read(file);
             
-            // Use a new helper function
-            const updatedContent = this.replaceFirstSection(content, newDescription);
+            const updatedContent = PlannerParser.replaceFirstSection(content, description);
             
-            await this.app.vault.modify(file, updatedContent);
-            await this.refreshTrack(trackId);
+            this.isUpdatingInternally = true;
+            try {
+                await this.app.vault.modify(file, updatedContent);
+            } finally {
+                this.isUpdatingInternally = false;
+            }
+
+            // Direct update - change description in memory
+            this.parsedTracksContent.update(tracks => ({
+                ...tracks,
+                [trackId]: {
+                    ...tracks[trackId],
+                    description
+                }
+            }));
             
             return true;
         } catch (error) {
@@ -553,24 +605,6 @@ export class TrackNoteService {
 
     // ===== Project-level operations ===== //
 
-    /** Helper to update a project file with a content transformation */
-    private async updateProjectFile(
-        trackId: string,
-        projectId: string,
-        updater: (content: string) => string
-    ): Promise<void> {
-        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
-        if (!projectFile) {
-            console.warn(`Project ${projectId} not found in track ${trackId}`);
-            return;
-        }
-
-        const content = await this.app.vault.read(projectFile);
-        const updated = updater(content);
-        await this.app.vault.modify(projectFile, updated);
-        await this.refreshTrack(trackId);
-    }
-
     /** Update project label (renames the file) */
     async updateProjectLabel(trackId: string, projectId: string, label: string): Promise<void> {
         const projectFile = this.trackFileCache[trackId]?.projects[projectId];
@@ -580,14 +614,71 @@ export class TrackNoteService {
         }
 
         const newPath = `${projectFile.parent!.path}/${label}.md`;
-        await this.app.fileManager.renameFile(projectFile, newPath);
-        await this.refreshTrack(trackId);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.fileManager.renameFile(projectFile, newPath);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - change project label in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            label
+                        }
+                    }
+                }
+            };
+        });
     }
 
     /** Update project description (first section) */
     async updateProjectDescription(trackId: string, projectId: string, description: string): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            return PlannerParser.replaceFirstSection(content, description);
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const updated = PlannerParser.replaceFirstSection(content, description);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - change project description in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            description
+                        }
+                    }
+                }
+            };
         });
     }
 
@@ -599,10 +690,34 @@ export class TrackNoteService {
             return;
         }
 
-        await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
-            fm.start_date = startDate;
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
+                fm.start_date = startDate;
+            });
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - change project startDate in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            startDate
+                        }
+                    }
+                }
+            };
         });
-        await this.refreshTrack(trackId);
     }
 
     /** Update project end date */
@@ -613,14 +728,38 @@ export class TrackNoteService {
             return;
         }
 
-        await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
-            if (endDate) {
-                fm.end_date = endDate;
-            } else {
-                delete fm.end_date;
-            }
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.fileManager.processFrontMatter(projectFile, (fm) => {
+                if (endDate) {
+                    fm.end_date = endDate;
+                } else {
+                    delete fm.end_date;
+                }
+            });
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - change project endDate in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            endDate: endDate ?? undefined
+                        }
+                    }
+                }
+            };
         });
-        await this.refreshTrack(trackId);
     }
 
     /** Delete a project file */
@@ -639,6 +778,12 @@ export class TrackNoteService {
 
     /** Add a new habit to a project */
     async addProjectHabit(trackId: string, projectId: string): Promise<void> {
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
         const newHabitId = `habit-${Date.now()}`;
         const newHabit: Habit = {
             id: newHabitId,
@@ -647,44 +792,143 @@ export class TrackNoteService {
             rrule: ""
         };
 
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const habitSection = PlannerParser.extractSection(content, "Habits");
-            const habits = PlannerParser.parseHabitSection(habitSection);
-            
-            habits[newHabitId] = newHabit;
-            
-            const newHabitsSection = PlannerParser.serializeHabits(habits);
-            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        const content = await this.app.vault.read(projectFile);
+        const habitSection = PlannerParser.extractSection(content, "Habits");
+        const habits = PlannerParser.parseHabitSection(habitSection);
+        
+        habits[newHabitId] = newHabit;
+        
+        const newHabitsSection = PlannerParser.serializeHabits(habits);
+        const updated = PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - add habit to memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            habits: {
+                                ...track.projects[projectId].habits,
+                                [newHabitId]: newHabit
+                            }
+                        }
+                    }
+                }
+            };
         });
     }
 
     /** Update a specific habit in a project */
     async updateProjectHabit(trackId: string, projectId: string, habitId: string, habit: Habit): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const habitSection = PlannerParser.extractSection(content, "Habits");
-            const habits = PlannerParser.parseHabitSection(habitSection);
-            
-            habits[habitId] = habit;
-            
-            const newHabitsSection = PlannerParser.serializeHabits(habits);
-            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const habitSection = PlannerParser.extractSection(content, "Habits");
+        const habits = PlannerParser.parseHabitSection(habitSection);
+        
+        habits[habitId] = habit;
+        
+        const newHabitsSection = PlannerParser.serializeHabits(habits);
+        const updated = PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - update habit in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            habits: {
+                                ...track.projects[projectId].habits,
+                                [habitId]: habit
+                            }
+                        }
+                    }
+                }
+            };
         });
     }
 
     /** Delete a habit from a project */
     async deleteProjectHabit(trackId: string, projectId: string, habitId: string): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const habitSection = PlannerParser.extractSection(content, "Habits");
-            const habits = PlannerParser.parseHabitSection(habitSection);
-            
-            delete habits[habitId];
-            
-            const newHabitsSection = PlannerParser.serializeHabits(habits);
-            return PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const habitSection = PlannerParser.extractSection(content, "Habits");
+        const habits = PlannerParser.parseHabitSection(habitSection);
+        
+        delete habits[habitId];
+        
+        const newHabitsSection = PlannerParser.serializeHabits(habits);
+        const updated = PlannerParser.replaceSection(content, 'Habits', newHabitsSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - remove habit from memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            const newHabits = { ...track.projects[projectId].habits };
+            delete newHabits[habitId];
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            habits: newHabits
+                        }
+                    }
+                }
+            };
         });
     }
 
-    // ===== Project Element/Task operations ===== //
+    // ===== Project Task operations ===== //
 
     /** Serialize elements array to string for Data section */
     private serializeDataSection(elements: Element[]): string {
@@ -697,51 +941,158 @@ export class TrackNoteService {
 
     /** Add a new element (task) to a project */
     async addProjectElement(trackId: string, projectId: string): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const dataSection = PlannerParser.extractSection(content, "Data");
-            const data = PlannerParser.parseDataSection(dataSection);
-            
-            // Add a new empty task
-            data.push({
-                raw: "\t- [ ] New Task",
-                text: "New Task",
-                isTask: true,
-                taskStatus: " ",
-                children: [],
-            });
-            
-            const newDataSection = this.serializeDataSection(data);
-            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const newElement: Element = {
+            raw: "\t- [ ] New Task",
+            text: "New Task",
+            isTask: true,
+            taskStatus: " ",
+            children: [],
+        };
+
+        const content = await this.app.vault.read(projectFile);
+        const dataSection = PlannerParser.extractSection(content, "Data");
+        const data = PlannerParser.parseDataSection(dataSection);
+        
+        data.push(newElement);
+        
+        const newDataSection = this.serializeDataSection(data);
+        const updated = PlannerParser.replaceSection(content, 'Data', newDataSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - add element to memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            data: [...track.projects[projectId].data, newElement]
+                        }
+                    }
+                }
+            };
         });
     }
 
     /** Update a specific element in a project */
     async updateProjectElement(trackId: string, projectId: string, elementIndex: number, updatedElement: Partial<Element>): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const dataSection = PlannerParser.extractSection(content, "Data");
-            const data = PlannerParser.parseDataSection(dataSection);
-            
-            if (elementIndex >= 0 && elementIndex < data.length) {
-                data[elementIndex] = { ...data[elementIndex], ...updatedElement };
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const dataSection = PlannerParser.extractSection(content, "Data");
+        const data = PlannerParser.parseDataSection(dataSection);
+        
+        if (elementIndex >= 0 && elementIndex < data.length) {
+            data[elementIndex] = { ...data[elementIndex], ...updatedElement };
+        }
+        
+        const newDataSection = this.serializeDataSection(data);
+        const updated = PlannerParser.replaceSection(content, 'Data', newDataSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - update element in memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            const newData = [...track.projects[projectId].data];
+            if (elementIndex >= 0 && elementIndex < newData.length) {
+                newData[elementIndex] = { ...newData[elementIndex], ...updatedElement };
             }
-            
-            const newDataSection = this.serializeDataSection(data);
-            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            data: newData
+                        }
+                    }
+                }
+            };
         });
     }
 
     /** Delete an element from a project */
     async deleteProjectElement(trackId: string, projectId: string, elementIndex: number): Promise<void> {
-        await this.updateProjectFile(trackId, projectId, (content) => {
-            const dataSection = PlannerParser.extractSection(content, "Data");
-            const data = PlannerParser.parseDataSection(dataSection);
-            
-            if (elementIndex >= 0 && elementIndex < data.length) {
-                data.splice(elementIndex, 1);
+        const projectFile = this.trackFileCache[trackId]?.projects[projectId];
+        if (!projectFile) {
+            console.warn(`Project ${projectId} not found in track ${trackId}`);
+            return;
+        }
+
+        const content = await this.app.vault.read(projectFile);
+        const dataSection = PlannerParser.extractSection(content, "Data");
+        const data = PlannerParser.parseDataSection(dataSection);
+        
+        if (elementIndex >= 0 && elementIndex < data.length) {
+            data.splice(elementIndex, 1);
+        }
+        
+        const newDataSection = this.serializeDataSection(data);
+        const updated = PlannerParser.replaceSection(content, 'Data', newDataSection);
+        
+        this.isUpdatingInternally = true;
+        try {
+            await this.app.vault.modify(projectFile, updated);
+        } finally {
+            this.isUpdatingInternally = false;
+        }
+
+        // Direct update - remove element from memory
+        this.parsedTracksContent.update(tracks => {
+            const track = tracks[trackId];
+            if (!track?.projects[projectId]) return tracks;
+
+            const newData = [...track.projects[projectId].data];
+            if (elementIndex >= 0 && elementIndex < newData.length) {
+                newData.splice(elementIndex, 1);
             }
-            
-            const newDataSection = this.serializeDataSection(data);
-            return PlannerParser.replaceSection(content, 'Data', newDataSection);
+
+            return {
+                ...tracks,
+                [trackId]: {
+                    ...track,
+                    projects: {
+                        ...track.projects,
+                        [projectId]: {
+                            ...track.projects[projectId],
+                            data: newData
+                        }
+                    }
+                }
+            };
         });
     }
 
