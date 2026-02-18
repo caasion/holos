@@ -2,6 +2,7 @@
 	import type { ISODate, Project } from "src/plugin/types";
 	import TaskElement from "src/planner/ui/grid/TaskElement.svelte";
 	import HabitElement, { type HabitFunctions } from "./HabitElement.svelte";
+	import EditableText from "src/components/EditableText.svelte";
 	import { getISODate } from "src/plugin/helpers";
 	import { format, parseISO } from "date-fns";
 
@@ -48,17 +49,19 @@
 <div class="project-card" style={`border-color: ${color};`}>
 	<div class="project-header">
 		<div class="project-title-row">
-			<h4 class="project-title" style={`color: ${color};`}>
+			<div class="project-title-section">
 				{#if isProjectActive()}
 					<span class="status-indicator active">●</span>
 				{:else}
 					<span class="status-indicator inactive">○</span>
 				{/if}
-				<div ondblclick={() => projectFunctions.onLabelEdit(project.label)} aria-label="Double click to edit" role="button" tabindex="0">
-					{project.label}
-				</div>
-				
-			</h4>
+				<EditableText 
+					value={project.label}
+					onSave={(newLabel) => projectFunctions.onLabelEdit(newLabel)}
+					placeholder="Project name..."
+					class="project-title" 
+				/>
+			</div>
 			<button class="icon-button" onclick={projectFunctions.onDelete} aria-label="Delete project">
 				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
 			</button>
@@ -66,6 +69,13 @@
 		<div class="project-date-range">
 			📅 {getDateRange()}
 		</div>
+		<EditableText 
+			value={project.description}
+			onSave={(newDescription) => projectFunctions.onDescriptionEdit(newDescription)}
+			placeholder="Project description..."
+			multiline={true}
+			class="project-description" 
+		/>
 	</div>
 
 	<!-- Habits Section -->
@@ -153,13 +163,23 @@
 		color: var(--text-muted);
 	}
 
-	.project-title {
-		margin: 0;
-		font-size: 1.1em;
-		font-weight: 600;
+	.project-title-section {
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		flex: 1;
+	}
+
+	:global(.project-title) {
+		font-size: 1.1em;
+		font-weight: 600;
+	}
+
+	:global(.project-description) {
+		font-size: 0.9em;
+		color: var(--text-muted);
+		font-style: italic;
+		margin-top: 6px;
 	}
 
 	.status-indicator {

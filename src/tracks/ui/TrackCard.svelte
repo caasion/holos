@@ -2,6 +2,7 @@
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
 	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import ProjectsSection from "./ProjectsSection.svelte";
+	import EditableText from "src/components/EditableText.svelte";
 	import type { Habit, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 	import { EditTrackTimeModal } from "./EditTrackTimeModal";
 	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
@@ -33,10 +34,6 @@
     createHabitFunctions
   }: TrackCardProps = $props();
 
-  function onTrackLabelClick() {
-    console.log("Planning to implement an editable textbox here, but not yet implemented!")
-  }
-
   function handleJournalHeaderEdit() {
     new EditJournalHeaderModal(
       app,
@@ -63,17 +60,24 @@
   }
 </script>
 
-<div class="card" style={`background-color: ${track.color}10;`}>
+<div class="card" style={`background-color: ${track.color}10; --track-color: ${track.color};`}>
   <div class="card-header-container">
     <div class="card-data-container">
-      <button 
-        class="card-header clickable track-title" 
-        style={`color: ${track.color};`}
-        ondblclick={onTrackLabelClick}
-        title="Click to edit track name or delete"
-      >
-        {track.label}
-      </button>
+      <div class="track-label-description">
+        <EditableText 
+          value={track.label}
+          onSave={(newLabel) => trackFunctions.onLabelEdit(newLabel)}
+          placeholder="Track name..."
+          class="track-title" 
+        />
+        <EditableText 
+          value={track.description}
+          onSave={(newDescription) => trackFunctions.onDescriptionEdit(newDescription)}
+          placeholder="Track description..."
+          multiline={true}
+          class="track-description" 
+        />
+      </div>
     </div>
     
     <div class="card-data-container">
@@ -150,13 +154,24 @@
     opacity: 0.8;
   }
 
-  .track-title {
-    background: none;
-    border: none;
-    padding: 0;
+  .track-label-description {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  :global(.track-title) {
     font-size: 1.17em;
     font-weight: bold;
     text-align: left;
+    color: var(--track-color);
+  }
+
+  :global(.track-description) {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    font-style: italic;
   }
 
   .journal-icon {
