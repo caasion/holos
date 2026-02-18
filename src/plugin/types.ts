@@ -52,6 +52,7 @@ export interface Habit {
 export interface Project {
 	id: string
 	label: string;
+	description: string;
 	startDate: ISODate;
     endDate?: ISODate;
     habits: Record<string, Habit>; 

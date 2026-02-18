@@ -193,9 +193,12 @@ export class TrackNoteService {
         const taskSection = PlannerParser.extractSection(projectContent, "Tasks");
         const tasks = PlannerParser.parseTaskSection(taskSection);
         
+        const description = PlannerParser.extractFirstSection(projectContent);
+        
         return {
             id,
             label: projectFile.basename,
+            description,
             startDate,
             endDate,
             tasks,
@@ -555,6 +558,7 @@ export class TrackNoteService {
         return {
             id,
             label,
+            description: '',
             startDate: today,
             habits: {},
             tasks: [],
