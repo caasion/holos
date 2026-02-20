@@ -11,12 +11,12 @@
 	import EditableCell from "./grid/EditableCell.svelte";
 	import { getISODate, getISODates, getLabelFromDateRange } from "src/plugin/helpers";
 	import DebugBlock from "src/playground/DebugBlock.svelte";
-	import { getBlocksMeta, getDateMappings, getSortedTemplates } from "../logic/rendering";
+	import { getBlocksMeta, getDateMappings } from "../logic/rendering";
 	import Navbar from "./Navbar.svelte";
 	import HeaderCell from "./grid/HeaderCell.svelte";
 	import EmptyCell from "./grid/EmptyCell.svelte";
 	import PlannerGrid from "./grid/PlannerGrid.svelte";
-	import { templates } from "../../templates/templatesStore";
+	import { compiledTemplateItems, sortedTemplateDates as sortedTemplateDatesStore } from "../../templates/templatesStore";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -49,10 +49,10 @@
 	let dates = $derived<ISODate[]>(weekFormat ? getISODates(anchor, blocks, weekStartOn) : getISODates(anchor, columns * blocks))
 
 	// Create a dictionary of each date mapped to its respective template date
-	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, templateActions));
+	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, $sortedTemplateDatesStore));
 
-	// Convert a template into a sorted array of items
-	let sortedTemplateDates: Record<TDate, Item[]> = $derived(getSortedTemplates(dateMappings, $templates));
+	// Consume precompiled template items (sorted once on template changes)
+	let sortedTemplateDates: Record<TDate, Item[]> = $derived($compiledTemplateItems);
 	
 	// Calculate the number of rows needed and derive the dates involved in each block
 	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
@@ -119,12 +119,6 @@
 <TemplateEditor {app} templatesAct={templateActions} {helper} />
 
 {:else}
-
-<FloatBlock 
-	templates={sortedTemplateDates} 
-	contextMenu={(e: MouseEvent, tDate: ISODate, id: ItemID, meta: ItemMeta) => { /* TODO: Implement context menu */ }} 
-	focusCell={(opt: boolean) => { return false }}
-/>  
 
 <PlannerGrid 
 	{sortedTemplateDates}

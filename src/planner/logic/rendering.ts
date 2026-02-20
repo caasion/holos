@@ -1,29 +1,26 @@
-import type { BlockMeta, DataService, DateMapping, ISODate, Item, ItemDict, TDate } from "src/plugin/types";
-import type { TemplateActions } from "../../templates/templateActions";
+import type { BlockMeta, DateMapping, ISODate, Item, TDate } from "src/plugin/types";
 
-export function getDateMappings(dates: ISODate[], templateActions: TemplateActions) {
-    return dates.map(date => ({
-			date,
-			tDate: templateActions.getTemplateDate(date)
-		}))
-}
+export function getDateMappings(dates: ISODate[], sortedTemplateDates: TDate[]) {
+    if (dates.length === 0) return [];
 
-export function getSortedTemplates(dateMappings: DateMapping[], templates: Record<TDate, ItemDict>) {
-    const obj: Record<TDate, Item[]> = {};
+    let templateIndex = 0;
+    let currentTemplateDate: TDate = "";
+    const mappings: DateMapping[] = [];
 
-    const allTemplateDates = new Set(dateMappings.map(d => d.tDate));
+    for (const date of dates) {
+        while (
+            templateIndex < sortedTemplateDates.length &&
+            sortedTemplateDates[templateIndex] <= date
+        ) {
+            currentTemplateDate = sortedTemplateDates[templateIndex];
+            templateIndex++;
+        }
 
-    allTemplateDates.forEach(tDate => {
-        if (tDate == "") return;
-        
-        const template = templates[tDate]; 
-    
-        const itemsArray: Item[] = Object.entries(template)
-            .map(([id, meta]) => ({id,meta}))
-            .sort((a, b) => a.meta.order - b.meta.order);
-
-        obj[tDate] = itemsArray;	
-    });
+        mappings.push({
+            date,
+            tDate: currentTemplateDate,
+        });
+    }
 
     return obj;
 }
