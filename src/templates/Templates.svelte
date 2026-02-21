@@ -4,6 +4,7 @@
 	import type { ISODate } from "src/plugin/types";
 	import { getISODate } from "src/plugin/helpers";
 	import type { TemplateActions } from "./templateActions";
+	import Tracks from "src/tracks/ui/Tracks.svelte";
 
     interface ViewProps {
         app: App;
@@ -12,72 +13,12 @@
 
     let { app, templatesAct }: ViewProps = $props();
 
-    let selectedTemplate = $state<ISODate>(templatesAct.getTemplateDate(getISODate(new Date())) ?? "");
-
-    function handleNewTemplate() {
-        templatesAct.handleNewTemplate(app);
-    }
+    // TODO: Current tracks
 
 </script>
 
 <div class="container">
-    <div class="section">
-        <div class="header">
-            <h2>Templates</h2>
-            <button onclick={handleNewTemplate}>+ New</button>
-        </div>
-        <div class="templates-selector">
-            {#each $sortedTemplateDates as tDate} 
-                <div class="template">
-                    <div 
-                    class="template-label" 
-                    role="button"
-                    tabindex="0"
-                    onclick={() => selectedTemplate = tDate}
-                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ' && (selectedTemplate = tDate))}
-                    >
-                        {tDate}
-                    </div>
-                    <div>
-                        <button
-                            onclick={() => templatesAct.handleRemoveTemplate(app, tDate)}
-                        >
-                            ×
-                        </button>
-                    </div>
-                </div>
-                
-            {/each}
-        </div>
-
-    </div>
-    <div class="section">
-        <h2>Template {selectedTemplate}</h2>
-        <div class="items-container">
-            {#if selectedTemplate !== ""}
-            {#each Object.entries($templates[selectedTemplate]).sort(([, aMeta], [, bMeta]) => aMeta.order - bMeta.order) as [id, meta] (id) }
-            <div class="item">
-                <div 
-                    class="item-label"
-                    role="button"
-                    tabindex="0"
-                    style="color: {meta.color};"
-                >
-                    {meta.label}
-                </div>
-                <div>
-                    <!-- TODO: Implement track reordering with file-system based tracks -->
-                </div>
-            </div>
-                
-            {/each}
-            <!-- TODO: Add track assignment to template -->
-            {:else}
-            <p>Select or create a template to manage tracks</p>
-            {/if}
-            
-        </div>
-    </div>
+    <Tracks />
 </div>
 
 <style>

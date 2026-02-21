@@ -1,13 +1,13 @@
 <script lang="ts">
 	import CircularProgress from "src/planner/ui/grid/CircularProgress.svelte";
-	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
+	import { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import ProjectsSection from "./ProjectsSection.svelte";
 	import EditableText from "src/components/EditableText.svelte";
-	import type { Habit, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
+	import type { Track, TrackFileFrontmatter } from "src/plugin/types";
 	import { EditTrackTimeModal } from "./EditTrackTimeModal";
 	import { EditJournalHeaderModal } from "./EditJournalHeaderModal";
 	import type { HabitFunctions } from "./HabitElement.svelte";
-	import { Notice, type App } from "obsidian";
+	import { type App } from "obsidian";
 	import { ConfirmationModal } from "src/plugin/ConfirmationModal";
 
   export interface TrackCardFunctions {

@@ -121,18 +121,6 @@ export class TemplateActions {
     
         return true;
     }
-
-    /** Removes an item from a template of a given date. Returns false if the given date doesn't have a template. */
-    public removeFromTemplate(tDate: TDate, id: string): boolean {
-        if (!this.getTemplate(tDate)) return false;
-    
-        templates.update(templates => {
-            const current = {...templates};
-            delete current[tDate].tracks[id];
-            return current;
-        })
-        return true;
-    }
     
     /** Removes a template from the list. Does not remove daily data */
     public removeTemplate(tDate: TDate): boolean {

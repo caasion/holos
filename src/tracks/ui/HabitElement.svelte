@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { Habit } from "src/plugin/types";
-	import RRuleEditor from "./RRuleEditor.svelte";
 	import { RRuleService } from "../logic/rrule";
-	import { isLabeledStatement } from "typescript";
 
 	export interface HabitFunctions {
 		onEdit: (habit: Habit) => void;

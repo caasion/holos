@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { Habit, Track } from "src/plugin/types";
+	import type { Track } from "src/plugin/types";
 	import TrackCard, { type TrackCardFunctions } from "./TrackCard.svelte";
   import type { TrackNoteService } from "../logic/trackNote";
-	import { ConfirmationModal } from "src/plugin/ConfirmationModal";
 	import { App, Notice } from "obsidian";
-	import ProjectCard, { type ProjectCardFunctions } from "./ProjectCard.svelte";
+	import { type ProjectCardFunctions } from "./ProjectCard.svelte";
 	import type { HabitFunctions } from "./HabitElement.svelte";
 	import { NewTrackModal } from "./NewTrackModal";
 	import { getISODate } from "src/plugin/helpers";
@@ -89,12 +88,7 @@
   }
 </script>
 
-<pre>
-  {JSON.stringify(parsedTracks, null, 2)}
-</pre>
-
 <div class="container">
-	<h1>Tracks View</h1>
   <div class="header-row">
     <h2>Manage Tracks</h2>
     <button 

@@ -11,6 +11,8 @@ export class NewTemplateModal extends Modal {
 
         new Setting(contentEl).setName("Create New Template").setHeading();
 
+        // TODO: Add Label field
+
         const dateContainer = document.createElement("div");
             dateContainer.setCssStyles({
                 display: "flex",
