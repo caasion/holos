@@ -1,8 +1,9 @@
+import { eachDayOfInterval, parseISO } from "date-fns";
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
 import { getISODate } from "src/plugin/helpers";
-import type { DateInterval, Element, Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
-import { type Writable, get } from "svelte/store";
+import type { DateInterval, Element, Habit, ISODate, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
+import { type Writable, get, writable } from "svelte/store";
 
 interface TrackFiles {
     id: string | null;
@@ -22,6 +23,7 @@ export class TrackNoteService {
     private settings: PluginSettings;
 
     public parsedTracksContent: Writable<Record<string, Track>>;
+    public tracksByDate: Writable<Record<ISODate, string[]>>;
 
     private trackFileCache: Record<string, TrackFiles> = {};
     
@@ -37,7 +39,8 @@ export class TrackNoteService {
     constructor(deps: TrackNoteServiceDeps) {
         this.app = deps.app;
         this.settings = deps.settings;
-        this.parsedTracksContent = deps.parsedTracksContent;
+        this.parsedTracksContent = writable<Record<string, Track>>({});
+        this.tracksByDate = writable<Record<ISODate, string[]>>({});
     }
 
     private normalizeISODate(value: unknown): string | null {
@@ -66,11 +69,36 @@ export class TrackNoteService {
             const start = this.normalizeISODate(record.start);
             const end = this.normalizeISODate(record.end);
 
-            if (!start || !end) continue;
-            effective.push({ start, end });
+            if (!start) continue;
+            effective.push(end ? { start, end } : { start });
         }
 
         return effective;
+    }
+    
+    // ===== Rendering logic ===== //
+
+    private addToTracksByDate(trackId: string, effective: DateInterval[]): void {
+        const today = getISODate(new Date());
+
+        for (const interval of effective) {
+            const intervalEnd = interval.end ?? today;
+
+            const dates = eachDayOfInterval({ 
+                start: parseISO(interval.start), 
+                end: parseISO(intervalEnd) 
+            });
+
+            dates.forEach(date => {
+                const iso = getISODate(date);
+
+                this.tracksByDate.update(prev => {
+                    prev[iso] ??= [];
+                    prev[iso].push(trackId);
+                    return prev;
+                })
+            })
+        }
     }
     
     // ===== Read operations ===== //
@@ -176,6 +204,7 @@ export class TrackNoteService {
 
         const { order, timeCommitment, journalHeader } = frontmatter;
         const effective = this.parseEffective(frontmatter);
+        this.addToTracksByDate(id, effective);
 
         const color = frontmatter.color ?? "#cccccc";
 
@@ -399,7 +428,9 @@ export class TrackNoteService {
         lines.push('effective:');
         for (const interval of track.effective) {
             lines.push(`  - start: ${interval.start}`);
-            lines.push(`    end: ${interval.end}`);
+            if (interval.end) {
+                lines.push(`    end: ${interval.end}`);
+            }
         }
         lines.push(`timeCommitment: ${track.timeCommitment}`);
         lines.push(`journalHeader: ${track.journalHeader}`);
