@@ -44,7 +44,7 @@ export interface ItemData {
 /* NEW Plugin Template Datatypes */
 export interface DateInterval {
     start: ISODate;
-    end: ISODate;
+    end?: ISODate;
 }
 
 export interface Habit {

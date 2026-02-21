@@ -80,7 +80,7 @@
         <div class="effective-list" title="Effective date intervals">
           {#if track.effective.length > 0}
             {#each track.effective as interval}
-              <div class="effective-item">{interval.start} → {interval.end}</div>
+              <div class="effective-item">{interval.start} → {interval.end ?? 'Present'}</div>
             {/each}
           {:else}
             <div class="effective-empty">No effective intervals</div>

@@ -12,7 +12,7 @@ export class NewTrackModal extends Modal {
             id: generateID("track-"),
             order: order,
             color: "#cccccc",
-            effective: [{ start: tDate, end: tDate }],
+            effective: [{ start: tDate }],
             timeCommitment: 0,
             journalHeader: "",
 
