@@ -2,7 +2,7 @@ import type { Day } from "date-fns";
 import type { Writable } from "svelte/store";
 import ICAL from "ical.js";
 import type { occurrenceDetails } from "ical.js/dist/types/types";
-import type { App, RequestUrlResponse, RequestUrlResponsePromise } from "obsidian";
+import type { RequestUrlResponse } from "obsidian";
 
 /* Plugin Data Types */
 export type ISODate = string; // Create date type for dates in ISO 8601 for simplification (not as heavy as a Date object)
@@ -41,37 +41,25 @@ export interface ItemData {
 	items: Element[];
 }
 
-/* Plugin Template Datatypes */
-export type ActionItemID = string;
-export type CalendarID = string;
-export type ItemID = ActionItemID | CalendarID;
-export type ItemMeta = ActionItemMeta | CalendarMeta;
-export type ItemType = "action" | "calendar";
-
-export interface ItemInnerMeta {
-    timeCommitment: number; 
-    habits: string[];
-    journalHeader: string;
+/* NEW Plugin Template Datatypes */
+export interface Habit {
+	id: string;
+    raw: string;
+	label: string;
+	rrule: string;
 }
 
-export interface ActionItemMeta {
-    id: ActionItemID;
-    type: "action";
-    order: number;
-    label: string;
-    color: string;
-    floatCell: string;
-    innerMeta: ItemInnerMeta;
+export interface Project {
+	id: string
+	label: string;
+	description: string;
+	startDate: ISODate;
+    endDate?: ISODate;
+    habits: Record<string, Habit>; 
+	tasks: Element[];
 }
 
 export interface CalendarMeta {
-    id: CalendarID;
-    type: "calendar";
-    order: number;
-    label: string;
-    color: string;
-    floatCell: string;
-    innerMeta: ItemInnerMeta;
     url: string;
     etag?: string;
     lastFetched?: number;
@@ -79,11 +67,40 @@ export interface CalendarMeta {
     contentHash?: string;
 }
 
+export interface Track {
+    id: string;
+    order: number;
+    color: string;
+    timeCommitment: number; 
+	journalHeader: string;
+    
+    label: string;
+    description: string;
+    projects: Record<string, Project>;
+}
+
+export interface TrackFileFrontmatter {
+    id: string;
+    order: number;
+    color: string;
+    timeCommitment: number;
+    journalHeader: string;
+}
+
+/* Plugin Template Datatypes */
 export type TDate = ISODate;
-export type ItemDict = Record<ItemID, ItemMeta>;
+
+export interface Template {
+  id: string;
+  name: string;
+  effectiveFrom: ISODate; 
+  tracks: string[];
+}
+
+export type Templates = Record<TDate, Template>;
 
 export interface PlannerState {
-    templates: Record<TDate, ItemDict>;
+    templates: Templates;
 }
 
 /* Planner Table Rendering */
@@ -124,6 +141,9 @@ export interface PluginSettings {
     refreshRemoteMs: number;
     lookaheadDays: number;
 
+    /* Track Settings */
+    trackFolder: string;
+
     /* Developer Mode */
     debug: boolean;
 }
@@ -136,6 +156,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
     autosaveDebounceMs: 200,
     sectionHeading: "Holos",
+
+    trackFolder: "Tracks",
 
     refreshRemoteMs: 5 * 60 * 1000,
     lookaheadDays: 14,
@@ -151,19 +173,6 @@ export interface DataService {
     templates: Writable<Record<ISODate, Record<ItemID, ItemMeta>>>;
     calendarState: Writable<CalendarState>;
     fetchToken: Writable<number>;
-
-    // Planner Store Actions (matches exports from plannerStore.ts)
-    setTemplate: (tDate: ISODate, newTemplate: Record<ItemID, ItemMeta>) => void;
-    addToTemplate: (tDate: ISODate, id: ItemID, meta: ItemMeta) => boolean;
-    getTemplate: (tDate: ISODate) => Record<ItemID, ItemMeta>;
-    getItemFromLabel: (tDate: ISODate, label: string) => ItemID;
-    removeFromTemplate: (tDate: ISODate, id: ItemID) => boolean;
-    removeFromCellsInTemplate: (tDate: ISODate, id: ItemID) => boolean;
-    removeTemplate: (tDate: ISODate) => boolean;
-    getItemMeta: (tDate: ISODate, id: ItemID) => ItemMeta;
-    updateItemMeta: (tDate: ISODate, id: ItemID, updates: Partial<ItemMeta>) => boolean;
-    setFloatCell: (tDate: ISODate, id: ItemID, value: string) => boolean;
-    getFloatCell: (tDate: ISODate, id: ItemID) => string;
 }
 
 // Core Helper Service Contract (Pure Functions from helper.ts)

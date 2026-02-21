@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount } from 'svelte';
 import HolosPlugin from '../main';
-import PlaygroundNew from "./PlaygroundNew.svelte";
+import Templates from "src/templates/Templates.svelte";
+import Tracks from "src/tracks/ui/Tracks.svelte";
 
 export const PLAYGROUND_VIEW_TYPE = "playground-view"
 
@@ -22,17 +23,17 @@ export class PlaygroundView extends ItemView {
     }
 
     async onOpen() {
+        // Initialize track note service if not already initialized
+        if (!this.plugin.trackNoteService) {
+            await this.plugin.initializeTrackNoteService();
+        }
+
         const container = this.contentEl;
 		container.empty();
                 
-        mount(PlaygroundNew, {target: container, props: {
-             app: this.plugin.app,
-            settings: this.plugin.settings,
-            data: this.plugin.dataService,
-            helper: this.plugin.helperService,
-            plannerActions: this.plugin.plannerActions,
-            calendarPipeline: this.plugin.calendarPipeline,
-            parser: this.plugin.parserService,
+        mount(Tracks, {target: container, props: {
+            app: this.plugin.app,
+            trackNoteService: this.plugin.trackNoteService
         }})
     }
 

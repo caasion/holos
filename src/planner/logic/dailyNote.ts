@@ -17,20 +17,13 @@ export class DailyNoteService {
     private settings: PluginSettings;
     private parser: PlannerParser;
     
-    // Track if we're currently writing to prevent re-reading our own changes
     private isWriting: boolean = false;
-    
-    // Debounce timer for writes
     private writeTimer: NodeJS.Timeout | null = null;
     
-    // Store for parsed content
     public parsedContent: Writable<Record<ISODate, Record<ItemID, ItemData>>> = writable({});
     public parsedJournalContent: Writable<Record<ISODate, Record<string, string>>> = writable({});
     
-    // File watcher reference
     private fileModifyRef: EventRef | null = null;
-    
-    // Current dates being watched
     private watchedDates: ISODate[] = [];
 
     constructor(deps: DailyNoteServiceDeps) {
@@ -39,6 +32,8 @@ export class DailyNoteService {
         this.parser = deps.parser;
     }
 
+    // ===== Read operations ===== //
+
     /** Get the contents of a daily note file */
     private async getDailyNoteContents(file: TFile): Promise<string | null> {
         if (file) {
@@ -46,46 +41,6 @@ export class DailyNoteService {
         } else {
             return null;
         }
-    }
-
-    /** Write content back to a daily note */
-    async writeDailyNote(date: ISODate, items: Record<ItemID, ItemData>): Promise<void> {
-        this.isWriting = true;
-        
-        try {
-            const dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
-            
-            if (!dailyNoteFile) {
-                console.warn(`No daily note found for ${date}`);
-                return;
-            }
-            
-            const currentContent = await this.app.vault.read(dailyNoteFile);
-            const newSection = this.parser.serializeSection(date, items);
-            const updatedContent = PlannerParser.replaceSection(currentContent, this.settings.sectionHeading, newSection);
-            
-            await this.app.vault.modify(dailyNoteFile, updatedContent); // Write back to file
-            
-            console.log(`Updated planner section for ${date}`);
-        } catch (error) {
-            console.error(`Error writing to daily note for ${date}:`, error);
-        } finally {
-            // Add a small delay before allowing reads again
-            setTimeout(() => {
-                this.isWriting = false;
-            }, 100);
-        }
-    }
-
-    /** Debounced write function */
-    debouncedWrite(date: ISODate, items: Record<ItemID, ItemData>): void {
-        if (this.writeTimer) {
-            clearTimeout(this.writeTimer);
-        }
-        
-        this.writeTimer = setTimeout(() => {
-            this.writeDailyNote(date, items);
-        }, 500);
     }
 
     /** Load and parse content from a daily note */
@@ -136,6 +91,50 @@ export class DailyNoteService {
         this.parsedJournalContent.set(journalResult);
     }
 
+    // ===== Write operations ===== //
+
+    /** Write content back to a daily note */
+    async writeDailyNote(date: ISODate, items: Record<ItemID, ItemData>): Promise<void> {
+        this.isWriting = true;
+        
+        try {
+            const dailyNoteFile = getDailyNote(moment(date), getAllDailyNotes());
+            
+            if (!dailyNoteFile) {
+                console.warn(`No daily note found for ${date}`);
+                return;
+            }
+            
+            const currentContent = await this.app.vault.read(dailyNoteFile);
+            const newSection = this.parser.serializeSection(date, items);
+            const updatedContent = PlannerParser.replaceSection(currentContent, this.settings.sectionHeading, newSection);
+            
+            await this.app.vault.modify(dailyNoteFile, updatedContent); // Write back to file
+            
+            console.log(`Updated planner section for ${date}`);
+        } catch (error) {
+            console.error(`Error writing to daily note for ${date}:`, error);
+        } finally {
+            // Add a small delay before allowing reads again
+            setTimeout(() => {
+                this.isWriting = false;
+            }, 100);
+        }
+    }
+
+    /** Debounced write function */
+    debouncedWrite(date: ISODate, items: Record<ItemID, ItemData>): void {
+        if (this.writeTimer) {
+            clearTimeout(this.writeTimer);
+        }
+        
+        this.writeTimer = setTimeout(() => {
+            this.writeDailyNote(date, items);
+        }, 500);
+    }
+
+    // ===== File watchers ===== //
+
     /** Setup file watching for external changes */
     setupFileWatcher(dates: ISODate[]): void {
         // Clean up existing watcher
@@ -174,6 +173,8 @@ export class DailyNoteService {
             this.fileModifyRef = null;
         }
     }
+
+    // ===== Update operations ===== //
 
     /** Update cell content */
     updateCell(date: ISODate, itemId: ItemID, updatedData: ItemData): void {
@@ -276,6 +277,8 @@ export class DailyNoteService {
             await this.app.workspace.getLeaf(false).openFile(dailyNoteFile);
         }
     }
+
+    // ===== Clean up ===== //
 
     /** Clean up resources */
     destroy(): void {

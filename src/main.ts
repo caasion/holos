@@ -1,11 +1,11 @@
 import { Plugin } from 'obsidian';
 import { PLANNER_VIEW_TYPE, PlannerView } from './planner/PlannerView';
+import { TRACKS_VIEW_TYPE, TracksView } from './tracks/TracksView';
 import { HolosSettingsTab } from './plugin/SettingsTab';
-import { addToTemplate, getFloatCell, getItemMeta, getTemplate, getItemFromLabel, removeFromTemplate, removeTemplate, setFloatCell, setTemplate, sortedTemplateDates, templates, updateItemMeta } from './planner/plannerStore';
 import { get, type Unsubscriber } from 'svelte/store';
 import { DEFAULT_SETTINGS, type CalendarHelperService, type DataService, type FetchService, type HelperService, type PluginData, type PluginSettings } from './plugin/types';
 import { CalendarPipeline } from './calendar/calendarPipelines';
-import { PlannerActions } from './planner/logic/itemActions';
+import { TemplateActions } from './templates/templateActions';
 import { calendarState, fetchToken } from './calendar/calendarState';
 import { hashText, generateID, getISODate, addDaysISO, swapArrayItems, getISODates, getLabelFromDateRange } from './plugin/helpers';
 import { parseICS, parseICSBetween, normalizeEvent, normalizeOccurrenceEvent, buildEventDictionaries, getEventLabels } from './calendar/calendarHelper';
@@ -13,6 +13,9 @@ import { fetchFromUrl, detectFetchChange } from './calendar/fetch';
 import { PlaygroundView, PLAYGROUND_VIEW_TYPE } from './playground/PlaygroundView';
 import { PlannerParser } from './planner/logic/parser';
 import { DailyNoteService } from './planner/logic/dailyNote';
+import { sortedTemplateDates, templates, parsedTracksContent } from './templates/templatesStore';
+import { sampleTemplateData } from './templates/sampleTemplateData';
+import { TrackNoteService } from './tracks/logic/trackNote';
 
 export default class HolosPlugin extends Plugin {
 	settings: PluginSettings;
@@ -22,31 +25,32 @@ export default class HolosPlugin extends Plugin {
 	public helperService: HelperService;
 	public calendarHelperService: CalendarHelperService;
 	public fetchService: FetchService;
-	public plannerActions: PlannerActions;
+	public templateActions: TemplateActions;
 	public calendarPipeline: CalendarPipeline;
 	public parserService: PlannerParser;
 	public dailyNoteService: DailyNoteService;
+	public trackNoteService: TrackNoteService;
 
 	async onload() {
 		await this.loadPersisted();
 
-		this.dataService = {
-			templates,
-			calendarState,
-			fetchToken,
+		// this.dataService = {
+		// 	templates,
+		// 	calendarState,
+		// 	fetchToken,
 			
-			setTemplate,
-			addToTemplate,
-			getTemplate,
-			getItemFromLabel,
-			removeFromTemplate,
-			removeFromCellsInTemplate: () => false, // NOT IMPLEMENTED
-			removeTemplate,
-			getItemMeta,
-			updateItemMeta,
-			setFloatCell,
-			getFloatCell,
-		}
+		// 	setTemplate,
+		// 	addToTemplate,
+		// 	getTemplate,
+		// 	getItemFromLabel,
+		// 	removeFromTemplate,
+		// 	removeFromCellsInTemplate: () => false, // NOT IMPLEMENTED
+		// 	removeTemplate,
+		// 	getItemMeta,
+		// 	updateItemMeta,
+		// 	setFloatCell,
+		// 	getFloatCell,
+		// }
 
 		this.helperService = {
 			hashText,
@@ -79,33 +83,28 @@ export default class HolosPlugin extends Plugin {
 			helpers: this.helperService, 
 			calHelpers: this.calendarHelperService
 		})
-
-		this.plannerActions = new PlannerActions({
-			settings: this.settings,
-			data: this.dataService, 
-			helpers: this.helperService, 
-			calendarPipelines: this.calendarPipeline
-		})
+		
+		this.templateActions = new TemplateActions();
 
 		this.parserService = new PlannerParser({
 			data: this.dataService,
-			plannerActions: this.plannerActions,
+			plannerActions: this.templateActions,
 		})
 
 		this.dailyNoteService = new DailyNoteService({
 			app: this.app,
 			settings: this.settings,
 			parser: this.parserService
-		})
+		});
 
 		// Add Settings Tab using Obsidian's API
 		this.addSettingTab(new HolosSettingsTab(this.app, this));
 
-		// Register UPV using Obsidian's API
+		// Register views using Obsidian's API
 		this.registerView(PLANNER_VIEW_TYPE, (leaf) => new PlannerView(leaf, this));
-		
+		this.registerView(TRACKS_VIEW_TYPE, (leaf) => new TracksView(leaf, this));
 
-		// Add a command to open UPV
+		// Add commands to open views
 		this.addCommand({
 			id: 'open-planner-view',
 			name: 'Open Holos Planner',
@@ -140,7 +139,22 @@ export default class HolosPlugin extends Plugin {
 		// Unsubscribe to stores
 		await this.storeSubscriptions.forEach(unsub => unsub());
 
+		// Clean up track note service if it was initialized
+		if (this.trackNoteService) {
+			this.trackNoteService.destroy();
+		}
+
 		await this.flushSave(); // Save immediately
+	}
+
+	async initializeTrackNoteService() {
+		if (this.trackNoteService) return;
+
+		this.trackNoteService = new TrackNoteService({
+			app: this.app,
+			settings: this.settings,
+			parsedTracksContent: parsedTracksContent
+		});
 	}
 
 	async activateView(view: string) {
@@ -161,7 +175,7 @@ export default class HolosPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings) // Populate Settings
 		
 		// Initialize Stores, Subscribe, and assign unsubscribers
-		templates.set(Object.assign({}, {}, data.planner && data.planner.templates));
+		templates.set(Object.assign({}, sampleTemplateData, data.planner && data.planner.templates));
 		this.storeSubscriptions = [
 			templates.subscribe(() => this.queueSave()),
 			templates.subscribe((templates) => templates && Object.keys(templates) && sortedTemplateDates.set(Object.keys(templates).sort()))
@@ -170,7 +184,7 @@ export default class HolosPlugin extends Plugin {
 
 	private snapshot(): PluginData {
 		return {
-			version: 6,
+			version: 7,
 			settings: this.settings,
 			planner: {
 				templates: get(templates),

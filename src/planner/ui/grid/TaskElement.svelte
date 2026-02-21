@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Element, ItemMeta, Time } from "src/plugin/types";
+	import type { Element, Time } from "src/plugin/types";
 	import CircularProgress from "./CircularProgress.svelte";
 	import { formatTime } from "src/plugin/helpers";
 	import { longpress } from "src/plugin/actions"
@@ -7,14 +7,14 @@
 	interface TaskElementProps {
 		element: Element;
 		index: number;
-		itemMeta: ItemMeta;
+		color: string;
 		onUpdate: (index: number, updatedElement: Element) => void;
 		onDelete: (index: number) => void;
 		onToggle: (index: number) => void;
 		onCancel: (index: number) => void;
 	}
 
-	let { element, index, itemMeta, onUpdate, onDelete, onToggle, onCancel }: TaskElementProps = $props();
+	let { element, index, color, onUpdate, onDelete, onToggle, onCancel }: TaskElementProps = $props();
 
 	let isEditing = $state<boolean>(false);
 	let editText = $state<string>("");
@@ -159,12 +159,12 @@
 				</span>
 				<div class="time-badge-container">
 					{#if element.duration && element.timeUnit}
-						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+						<span class="time-badge" style={`background-color: ${color}80;`}>
 							{element.duration} {element.timeUnit}
 						</span>
 					{/if}
 					{#if element.startTime}
-						<span class="time-badge" style={`background-color: ${itemMeta.color}80;`}>
+						<span class="time-badge" style={`background-color: ${color}80;`}>
 							{formatTime(element.startTime)}
 						</span>
 					{/if}

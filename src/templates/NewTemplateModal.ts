@@ -1,5 +1,5 @@
 import { Modal, App, Setting } from "obsidian";
-import { templates } from "src/planner/plannerStore";
+import { templates } from "src/templates/templatesStore";
 import type { ISODate } from "src/plugin/types";
 import { get } from "svelte/store";
 
@@ -10,6 +10,8 @@ export class NewTemplateModal extends Modal {
         const { contentEl } = this
 
         new Setting(contentEl).setName("Create New Template").setHeading();
+
+        // TODO: Add Label field
 
         const dateContainer = document.createElement("div");
             dateContainer.setCssStyles({

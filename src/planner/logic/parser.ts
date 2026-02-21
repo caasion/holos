@@ -1,22 +1,41 @@
 // PURPOSE: Provides tools to extract the desired section header and the information from the header section
 
-import type { PlannerActions } from "src/planner/logic/itemActions";
 import { formatProgressDuration, formatTime } from "src/plugin/helpers";
-import type { DataService, Element, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
+import type { DataService, Element, Habit, ISODate, ItemData, ItemID, LineInfo, Time } from "src/plugin/types";
+import type { TemplateActions } from "src/templates/templateActions";
+import { RRuleService } from "src/tracks/logic/rrule";
 
 export interface ParserDeps {
 	data: DataService;
-	plannerActions: PlannerActions;
+	plannerActions: TemplateActions | null;
 }
 
 export class PlannerParser {
 	private data: DataService;
-	private plannerActions: PlannerActions;
+	private plannerActions: TemplateActions | null;
 
 	constructor(deps: ParserDeps) {
 		this.data = deps.data;
 		this.plannerActions = deps.plannerActions;
 	}
+
+    // ===== Reading - Extraction ===== //
+
+    static extractFirstSection(content: string): string {
+        const lines = content.replace(/^---[\s\S]*?---\s*/, '').split('\n');
+        let sectionLines: string[] = [];
+
+        for (const line of lines) {
+            const headerMatch = line.match(/^(#{1,6})\s+(.*)/);
+
+            if (headerMatch) break;
+
+            sectionLines.push(line);
+        }
+
+        return sectionLines.join('\n')
+        
+    }
 
     static extractSection(content: string, headerText: string): string {
         const lines = content.split('\n');
@@ -45,6 +64,8 @@ export class PlannerParser {
         }
         return sectionLines.join('\n');
     }
+
+    // ===== Reading - Parsing ===== //
 
     static parseJournalSection(section: string): Record<string, string> {
         const lines = section.split('\n');
@@ -77,8 +98,77 @@ export class PlannerParser {
 
         return journalData;
     }
+
+    static parseHabitSection(section: string): Record<string, Habit> {
+        const lines = section.split('\n');
+        const habits: Record<string, Habit> = {};
+
+        for (const line of lines) {
+            // Skip empty lines or lines that aren't bullet points
+            if (!line || !line.match(/^- /)) continue;
+
+            let text = line.replace(/^- /, '').trim();
+            let label: string = text;
+            let rrule: string = '';
+            
+            // Extract rrule from pattern: Label (FREQ=DAILY;BYDAY=MO,WE,FR)
+            const rruleRegex = /\[([^\]]*)\]\s*$/;
+
+            const rruleMatch = text.match(rruleRegex);
+            if (rruleMatch) {
+                const [fullMatch, rruleContent] = rruleMatch;
+                label = text.replace(fullMatch, '').trim();
+                rrule = RRuleService.parseRRule(rruleContent);
+            }
+
+            // Generate ID from label (lowercase, replace spaces with hyphens)
+            const id = 'habit-' + crypto.randomUUID();
+            
+            habits[id] = {
+                id,
+                raw: '- ' + text,
+                label,
+                rrule
+            };
+        }
+
+        return habits;
+    }
+
+    static parseTaskSection(section: string): Element[] {
+        const lines = section.split('\n');
+        const tasks: Element[] = [];
+        let currentElement: Element | null = null;
+
+        for (const line of lines) {
+            // Skip empty lines
+            if (!line.trim()) continue;
+
+            // Top-level element (no tabs or single-level tabs)
+            if (line.match(/^\t?- /)) {
+                // Push previous element if exists
+                if (currentElement) {
+                    tasks.push(currentElement);
+                }
+                
+                // Parse new element
+                currentElement = PlannerParser.parseElementLine(line);
+            } else if (line.match(/^\t\t- /) && currentElement) {
+                // Child item
+                const text = line.replace(/^\t\t- /, '').trim();
+                currentElement.children.push(text);
+            }
+        }
+
+        // Push last element
+        if (currentElement) {
+            tasks.push(currentElement);
+        }
+
+        return tasks;
+    }
     
-    public parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
+    parseSection(date: ISODate, section: string): Record<ItemID, ItemData> {
 	    const lines = section.split('\n');
 		const itemData: Record<ItemID, ItemData> = {};
 		let currItem: ItemData | null = null;
@@ -110,8 +200,9 @@ export class PlannerParser {
 					text = text.replace(fullMatch, '').trim();
 				}
 				
+				const templateDate = this.plannerActions?.getTemplateDate(date) ?? date;
 				currItem = {
-					id: this.data.getItemFromLabel(this.plannerActions.getTemplateDate(date), text),
+					id: this.data.getItemFromLabel(templateDate, text),
 					time: timeCommitment,
 					items: [],
 				}
@@ -140,7 +231,7 @@ export class PlannerParser {
         return itemData;
     }
     
-    public static parseElementLine(line: string): Element {
+    static parseElementLine(line: string): Element {
 		let text = line.replace(/^\s+- /, '');
 
 	    let isTask = false;
@@ -191,8 +282,10 @@ export class PlannerParser {
 		};
     }
 
+    // ===== Writing - Serialization ===== // 
+
     // Serialize an Element back to a string
-    public static serializeElement(element: Element | Omit<Element, 'raw'>): string {
+    static serializeElement(element: Element | Omit<Element, 'raw'>): string {
         let line = '\t- ';
 
 		// Construct the raw string from the element properties when it is changed
@@ -248,8 +341,8 @@ export class PlannerParser {
     }
     
     // Serialize entire section back to string
-    public serializeSection(date: ISODate, items: Record<ItemID, ItemData>): string {
-        const templateDate = this.plannerActions.getTemplateDate(date);
+    serializeSection(date: ISODate, items: Record<ItemID, ItemData>): string {
+        const templateDate = this.plannerActions?.getTemplateDate(date) ?? date;
         const template = this.data.getTemplate(templateDate);
         
         // Sort items by order from template
@@ -272,9 +365,19 @@ export class PlannerParser {
         
         return result;
     }
+
+    static serializeHabits(habits: Record<string, Habit>): string {
+        let result = '';
+        for (const habit of Object.values(habits)) {
+            result += habit.raw + '\n';
+        }
+        return result;
+    }
+
+    // ===== Writing - Replacing ===== //
     
     // Replace a section in the full file content
-    public static replaceSection(content: string, sectionHeading: string, newSectionContent: string): string {
+    static replaceSection(content: string, sectionHeading: string, newSectionContent: string): string {
         const lines = content.split('\n');
         let result: string[] = [];
         let inSection = false;
@@ -306,6 +409,53 @@ export class PlannerParser {
             result.push('');
             result.push(`## ${sectionHeading}`);
             result.push(newSectionContent);
+        }
+        
+        return result.join('\n');
+    }
+
+    static replaceFirstSection(content: string, newSectionContent: string) {
+        const lines = content.split('\n');
+        let result: string[] = [];
+        let frontmatterEnd = -1;
+        let inFrontmatter = false;
+        
+        // Find frontmatter end
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i] === '---') {
+                if (!inFrontmatter) {
+                    inFrontmatter = true;
+                } else {
+                    frontmatterEnd = i;
+                    break;
+                }
+            }
+        }
+        
+        if (frontmatterEnd === -1) {
+            console.warn('No frontmatter found');
+            return content;
+        }
+        
+        // Add frontmatter
+        result.push(...lines.slice(0, frontmatterEnd + 1));
+        result.push('');
+        
+        // Add new description
+        result.push(newSectionContent);
+        result.push('');
+        
+        // Find and add first section (and everything after)
+        let firstSectionIndex = -1;
+        for (let i = frontmatterEnd + 1; i < lines.length; i++) {
+            if (lines[i].match(/^#{1,6}\s+/)) {
+                firstSectionIndex = i;
+                break;
+            }
+        }
+        
+        if (firstSectionIndex !== -1) {
+            result.push(...lines.slice(firstSectionIndex));
         }
         
         return result.join('\n');
