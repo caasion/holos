@@ -138,7 +138,7 @@
 
   .add-button:hover {
     opacity: 1;
-    background: var(--background-modifier-hover)
+    background: var(--theme-color-translucent-015);
   }
 
   .section-empty-state {
