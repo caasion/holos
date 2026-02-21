@@ -77,6 +77,15 @@
           multiline={true}
           class="track-description" 
         />
+        <div class="effective-list" title="Effective date intervals">
+          {#if track.effective.length > 0}
+            {#each track.effective as interval}
+              <div class="effective-item">{interval.start} → {interval.end}</div>
+            {/each}
+          {:else}
+            <div class="effective-empty">No effective intervals</div>
+          {/if}
+        </div>
       </div>
     </div>
     
@@ -172,6 +181,19 @@
     font-size: 0.9em;
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .effective-list {
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .effective-item,
+  .effective-empty {
+    font-size: 0.8em;
+    color: var(--text-muted);
   }
 
   .journal-icon {

@@ -1,7 +1,7 @@
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
 import { getISODate } from "src/plugin/helpers";
-import type { Element, Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
+import type { DateInterval, Element, Habit, PluginSettings, Project, Track, TrackFileFrontmatter } from "src/plugin/types";
 import { type Writable, get } from "svelte/store";
 
 interface TrackFiles {
@@ -38,6 +38,39 @@ export class TrackNoteService {
         this.app = deps.app;
         this.settings = deps.settings;
         this.parsedTracksContent = deps.parsedTracksContent;
+    }
+
+    private normalizeISODate(value: unknown): string | null {
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            return trimmed ? trimmed : null;
+        }
+
+        if (typeof value === 'number') {
+            return String(value);
+        }
+
+        return null;
+    }
+
+    private parseEffective(frontmatter?: FrontMatterCache['frontmatter']): DateInterval[] {
+        const rawEffective = frontmatter?.effective;
+        if (!Array.isArray(rawEffective)) return [];
+
+        const effective: DateInterval[] = [];
+
+        for (const interval of rawEffective) {
+            if (!interval || typeof interval !== 'object') continue;
+
+            const record = interval as Record<string, unknown>;
+            const start = this.normalizeISODate(record.start);
+            const end = this.normalizeISODate(record.end);
+
+            if (!start || !end) continue;
+            effective.push({ start, end });
+        }
+
+        return effective;
     }
     
     // ===== Read operations ===== //
@@ -141,7 +174,8 @@ export class TrackNoteService {
             return null;
         }
 
-        const { order, timeCommitment, journalHeader} = frontmatter;
+        const { order, timeCommitment, journalHeader } = frontmatter;
+        const effective = this.parseEffective(frontmatter);
 
         const color = frontmatter.color ?? "#cccccc";
 
@@ -161,6 +195,7 @@ export class TrackNoteService {
             id,
             order,
             color,
+            effective,
             timeCommitment,
             journalHeader,
             
@@ -361,6 +396,11 @@ export class TrackNoteService {
         lines.push(`id: ${track.id}`);
         lines.push(`order: ${track.order}`);
         lines.push(`color: ${track.color}`);
+        lines.push('effective:');
+        for (const interval of track.effective) {
+            lines.push(`  - start: ${interval.start}`);
+            lines.push(`    end: ${interval.end}`);
+        }
         lines.push(`timeCommitment: ${track.timeCommitment}`);
         lines.push(`journalHeader: ${track.journalHeader}`);
         lines.push('---');
