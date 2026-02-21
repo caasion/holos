@@ -42,6 +42,11 @@ export interface ItemData {
 }
 
 /* NEW Plugin Template Datatypes */
+export interface DateInterval {
+    start: ISODate;
+    end: ISODate;
+}
+
 export interface Habit {
 	id: string;
     raw: string;
@@ -71,6 +76,7 @@ export interface Track {
     id: string;
     order: number;
     color: string;
+    effective: DateInterval[];
     timeCommitment: number; 
 	journalHeader: string;
     
@@ -83,6 +89,7 @@ export interface TrackFileFrontmatter {
     id: string;
     order: number;
     color: string;
+    effective: DateInterval[];
     timeCommitment: number;
     journalHeader: string;
 }
