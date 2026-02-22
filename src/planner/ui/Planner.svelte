@@ -17,6 +17,7 @@
 	import EmptyCell from "./grid/EmptyCell.svelte";
 	import PlannerGrid from "./grid/PlannerGrid.svelte";
 	import { compiledTemplateItems, sortedTemplateDates as sortedTemplateDatesStore } from "../../templates/templatesStore";
+	import type { TrackNoteService } from "src/tracks/logic/trackNote";
 
 	// Purpose: To provide a UI to interact with the objects storing the information. The view reads the objects to generate an appropriate table.
 
@@ -29,9 +30,10 @@
 		calendarPipeline: CalendarPipeline;
 		parser: PlannerParser;
 		dailyNoteService: DailyNoteService;
+		trackNoteService: TrackNoteService;
 	}
 
-	let { app, settings, data, helper, templateActions, calendarPipeline, parser, dailyNoteService }: ViewProps = $props();
+	let { app, settings, data, helper, templateActions, calendarPipeline, parser, dailyNoteService, trackNoteService }: ViewProps = $props();
 
 	
 	/* === View Rendering === */
@@ -52,7 +54,8 @@
 	let dateMappings: DateMapping[] = $derived(getDateMappings(dates, $sortedTemplateDatesStore));
 
 	// Consume precompiled template items (sorted once on template changes)
-	let sortedTemplateDates: Record<TDate, Item[]> = $derived($compiledTemplateItems);
+	const tracksByDateStore = trackNoteService.tracksByDate;
+	let tracksByDate = $derived<Record<ISODate, string[]>>($tracksByDateStore);
 	
 	// Calculate the number of rows needed and derive the dates involved in each block
 	let blocksMeta: BlockMeta[] = $derived(getBlocksMeta(blocks, columns, dateMappings, sortedTemplateDates));
@@ -78,6 +81,23 @@
 		};
 	});
 
+	const trackStore = trackNoteService.parsedTracksContent;
+  const parsedTracks = $derived($trackStore);
+
+  // Load track content when component mounts
+  $effect(() => {
+    trackNoteService.loadAllTrackContent();
+  });
+
+  // Setup file watcher with cleanup
+  $effect(() => {
+    trackNoteService.setupFileWatchers();
+    
+    return () => {
+      trackNoteService.cleanupFileWatchers();
+    };
+  });
+
 	// Update handler for editable cells
 	function handleCellUpdate(date: ISODate, itemId: ItemID, updatedData: ItemData) {
 		dailyNoteService.updateCell(date, itemId, updatedData);
@@ -88,16 +108,15 @@
 		await dailyNoteService.addNewItemToCell(date, itemId, itemMeta.innerMeta.timeCommitment);
 	}
 
-	// Currently doesn't work
-	function goTo(newDate: ISODate) {
-		/* Maintain focus when switching weeks */
-		anchor = newDate;
-	}
-
 	// Open daily note for a specific date
 	async function openDailyNote(date: ISODate) {
 		await dailyNoteService.openDailyNote(date);
 	}
+
+	function goTo(newDate: ISODate) {
+			anchor = newDate;
+	}
+	
 	
 </script>
 
@@ -121,9 +140,11 @@
 {:else}
 
 <PlannerGrid 
-	{sortedTemplateDates}
-	{blocksMeta}
+	{dates}
+	{tracksByDate}
+	{parsedTracks}
 	{columns}
+	{blocks}
 	{parsedContent}
 	{parsedJournalContent}
 	{handleCellUpdate}

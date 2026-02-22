@@ -16,10 +16,7 @@
   let { app, trackNoteService }: TracksProps = $props();
 
   const trackStore = trackNoteService.parsedTracksContent;
-
   const parsedTracks = $derived($trackStore);
-
-  $inspect(parsedTracks)
 
   // Load track content when component mounts
   $effect(() => {

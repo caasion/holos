@@ -1,59 +1,42 @@
 <script lang="ts">
-	import type { ISODate, TDate, Item, BlockMeta, ItemData, ItemID, ItemMeta } from "src/plugin/types";
-	import EditableCell from "./EditableCell.svelte";
-	import EmptyCell from "./EmptyCell.svelte";
+	import type { ISODate, Track } from "src/plugin/types";
 	import HeaderCell from "./HeaderCell.svelte";
-	import WrapperCell from "./WrapperCell.svelte";
 
     interface Props {
-        sortedTemplateDates: Record<TDate, Item[]>;
-        blocksMeta: BlockMeta[];
+        dates: ISODate[];
+        tracksByDate: Record<ISODate, string[]>;
+        parsedTracks: Record<string, Track>;
+        blocks: number;
         columns: number;
-        parsedContent: Record<ISODate, Record<ItemID, ItemData>>;
-        parsedJournalContent: Record<ISODate, Record<string, string>>;
-        handleCellUpdate: (date: ISODate, itemId: ItemID, updatedData: ItemData) => void;
-        addNewItemToCell: (date: ISODate, itemId: ItemID, itemMeta: ItemMeta) => void;
         openDailyNote: (date: ISODate) => void;
     }
 
-    let { sortedTemplateDates, blocksMeta, columns, parsedContent, parsedJournalContent, handleCellUpdate, addNewItemToCell, openDailyNote }: Props = $props();    
+    const ROWS = 5;
+
+    let { dates, tracksByDate, parsedTracks, columns, blocks, openDailyNote }: Props = $props();    
 </script>
 
 <div class="main-grid-container">
-    {#each blocksMeta as {rows, dateTDateMapping} (dateTDateMapping)}
+    {#each {length: blocks} as _, block (block)} 
+    {@const blockDates = dates.slice(block * columns, (block + 1) * columns)}
     <div class="block-container">
         <!-- Header Row -->
         <div class="header-row" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-            {#each dateTDateMapping as {date} (date)}
+            {#each blockDates as date (date)}
             <HeaderCell {date} {openDailyNote} />
             {/each}
         </div>
 
         <!-- Data Grid -->
-        <div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr);`}>
-        {#each {length: rows} as _, row (row)}
-            {#each dateTDateMapping as {date, tDate: tDate}, col (col)}
-            {@const {id: itemId, meta: itemMeta} = sortedTemplateDates[tDate]?.[row] ?? {}}
-            {@const itemData = (parsedContent[date] && parsedContent[date][itemId]) ?? undefined}
-            {@const journalHeader = itemMeta.innerMeta.journalHeader}
-            {@const journalData = (parsedJournalContent[date] && parsedJournalContent[date][journalHeader]) ?? undefined}
+        <div class="data-grid" style={`grid-template-columns: repeat(${columns}, 1fr); grid-template-rows: repeat(${ROWS}, minmax(40px, auto)); grid-auto-flow: column;`}>
+            {#each blockDates as date (date)}
+            {#each {length: ROWS} as _, row (row)}
+            {@const trackId = tracksByDate[date]?.[row]}
+            {@const track = trackId ? parsedTracks[trackId] : undefined}
 
-            {#if row < (sortedTemplateDates[tDate]?.length ?? 0) && tDate != ""}
-            <WrapperCell 
-                {date}
-                showLabel={(col == 0 && itemMeta.label !== "") || tDate == date}
-                {itemMeta}
-                {itemId}
-                {itemData}
-                {journalData}
-                onUpdate={handleCellUpdate}
-                onAdd={addNewItemToCell}
-            />
-            {:else}
-            <div class="cell">-</div>
-            {/if}
+            <div class="cell">{track?.label ?? "-"}</div>
             {/each}
-        {/each}
+            {/each}
         </div>
     </div>
     {/each}
@@ -82,7 +65,6 @@
 	.data-grid {
 		display: grid;
 		/* grid-template-columns is set dynamically in the Svelte component */
-			grid-auto-rows: minmax(40px, auto); 
 	}
 
 	.cell {

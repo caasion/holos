@@ -97,6 +97,9 @@ export default class HolosPlugin extends Plugin {
 			parser: this.parserService
 		});
 
+		await this.initializeTrackNoteService();
+		await this.trackNoteService.initializeTracksByDate();
+
 		// Add Settings Tab using Obsidian's API
 		this.addSettingTab(new HolosSettingsTab(this.app, this));
 

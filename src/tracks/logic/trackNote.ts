@@ -1,4 +1,4 @@
-import { eachDayOfInterval, parseISO } from "date-fns";
+import { eachDayOfInterval, isValid, parseISO } from "date-fns";
 import { TFolder, type App, TFile, getAllTags, type FrontMatterCache, type EventRef, Menu, Notice } from "obsidian";
 import { PlannerParser } from "src/planner/logic/parser";
 import { getISODate } from "src/plugin/helpers";
@@ -78,27 +78,31 @@ export class TrackNoteService {
     
     // ===== Rendering logic ===== //
 
-    private addToTracksByDate(trackId: string, effective: DateInterval[]): void {
+    private addToTracksByDate(index: Record<ISODate, string[]>, trackId: string, effective: DateInterval[]): void {
         const today = getISODate(new Date());
 
         for (const interval of effective) {
             const intervalEnd = interval.end ?? today;
 
-            const dates = eachDayOfInterval({ 
-                start: parseISO(interval.start), 
-                end: parseISO(intervalEnd) 
-            });
+            const start = parseISO(interval.start);
+            const end = parseISO(intervalEnd);
+            if (!isValid(start) || !isValid(end)) continue;
+
+            const dates = eachDayOfInterval({ start, end });
 
             dates.forEach(date => {
                 const iso = getISODate(date);
+                index[iso] ??= [];
 
-                this.tracksByDate.update(prev => {
-                    prev[iso] ??= [];
-                    prev[iso].push(trackId);
-                    return prev;
-                })
+                if (!index[iso].includes(trackId)) {
+                    index[iso].push(trackId);
+                }
             })
         }
+    }
+
+    async initializeTracksByDate(): Promise<void> {
+        await this.loadAllTrackContent();
     }
     
     // ===== Read operations ===== //
@@ -109,13 +113,18 @@ export class TrackNoteService {
         }
 
         const tracks: Record<string, Track> = {};
+        const tracksByDate: Record<ISODate, string[]> = {};
 
         for (const key in this.trackFileCache) {
             const track = await this.loadTrackContent(key, this.trackFileCache[key])
-            if (track) tracks[key] = track;
+            if (!track) continue;
+
+            tracks[key] = track;
+            this.addToTracksByDate(tracksByDate, key, track.effective);
         }
 
         this.parsedTracksContent.set(tracks);
+        this.tracksByDate.set(tracksByDate);
     }
 
     async populateFileCache(): Promise<void> {
@@ -204,7 +213,6 @@ export class TrackNoteService {
 
         const { order, timeCommitment, journalHeader } = frontmatter;
         const effective = this.parseEffective(frontmatter);
-        this.addToTracksByDate(id, effective);
 
         const color = frontmatter.color ?? "#cccccc";
 
